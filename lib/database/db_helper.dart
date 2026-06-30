@@ -25,7 +25,7 @@ class DBHelper {
 
     return await openDatabase(
       path,
-      version: 5, // ← ALTERADO PARA VERSÃO 5
+      version: 5,
       onConfigure: _onConfigure,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
@@ -110,8 +110,8 @@ class DBHelper {
         fornecedor_id INTEGER,
         produto_id INTEGER,
         unidade_id INTEGER,
-        orcamento_id INTEGER,    // ← NOVO CAMPO
-        etapa_id INTEGER,        // ← NOVO CAMPO
+        orcamento_id INTEGER,
+        etapa_id INTEGER,
         quantidade REAL NOT NULL,
         valor_unitario REAL NOT NULL,
         valor_total REAL NOT NULL,
@@ -131,10 +131,10 @@ class DBHelper {
     await db.execute('CREATE INDEX idx_despesa_unidade ON despesa(unidade_id)');
     await db.execute(
       'CREATE INDEX idx_despesa_orcamento ON despesa(orcamento_id)',
-    ); // ← NOVO
+    );
     await db.execute(
       'CREATE INDEX idx_despesa_etapa ON despesa(etapa_id)',
-    ); // ← NOVO
+    );
     await db.execute('CREATE INDEX idx_etapa_orcamento ON etapa(orcamento_id)');
     await db.execute('CREATE INDEX idx_etapa_status ON etapa(status)');
     await db.execute('CREATE INDEX idx_despesa_data ON despesa(data)');
