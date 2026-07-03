@@ -79,12 +79,12 @@ Ideal para:
 
 ### Passo a Passo
 
-## 1. **Clone o repositório**
-```bash
+### 1. **Clone o repositório**
+
 git clone https://github.com/furlancarlos/acompanha_obra.git
 cd acompanha_obra
 
-2. Instale as dependências
+### 2. Instale as dependências
 
 flutter pub get
 
@@ -97,7 +97,7 @@ flutter run
 flutter build apk --release  # Android
 flutter build ios --release  # iOS
 
-📂 Estrutura do Projeto
+## 📂 Estrutura do Projeto
 text
 
 acompanha_obra/
