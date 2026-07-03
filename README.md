@@ -88,43 +88,43 @@ cd acompanha_obra
 
 flutter pub get
 
-    Execute o projeto
+    - Execute o projeto
 
 flutter run
 
-    Para build de produção
+    - Para build de produção
 
 flutter build apk --release  # Android
 flutter build ios --release  # iOS
 
 ## 📂 Estrutura do Projeto
 
-acompanha_obra/
-├── lib/
-│   ├── models/          # Classes de modelo (Orçamento, Etapa, Despesa)
-│   ├── screens/         # Telas do aplicativo
-│   │   ├── home_screen.dart
-│   │   ├── orcamento_screen.dart
-│   │   └── ...
-│   ├── widgets/         # Componentes reutilizáveis
-│   └── database/        # Configuração e helpers do SQLite
-├── assets/
-│   ├── construcao.png   # Ícone do app
-│   └── screenshots/     # Imagens para o README
-├── android/             # Configurações Android
-├── ios/                 # Configurações iOS
-├── pubspec.yaml         # Dependências e configurações
-└── README.md            # Este arquivo
+- acompanha_obra/
+- ├── lib/
+- │   ├── models/          # Classes de modelo (Orçamento, Etapa, Despesa)
+- │   ├── screens/         # Telas do aplicativo
+- │   │   ├── home_screen.dart
+- │   │   ├── orcamento_screen.dart
+- │   │   └── ...
+- │   ├── widgets/         # Componentes reutilizáveis
+- │   └── database/        # Configuração e helpers do SQLite
+- ├── assets/
+- │   ├── construcao.png   # Ícone do app
+- │   └── screenshots/     # Imagens para o README
+- ├── android/             # Configurações Android
+- ├── ios/                 # Configurações iOS
+- ├── pubspec.yaml         # Dependências e configurações
+- └── README.md            # Este arquivo
 
 ## 📊 Banco de Dados
 
 ### O aplicativo utiliza SQLite com as seguintes tabelas principais:
 
-    Orcamento: id, nome, descricao, valor_orcado
+-    Orcamento: id, nome, descricao, valor_orcado
 
-    Etapa: id, orcamento_id, nome, status (crítico/em_andamento/concluído/pendente), concluida
+-    Etapa: id, orcamento_id, nome, status (crítico/em_andamento/concluído/pendente), concluida
 
-    Despesa: id, orcamento_id, descricao, valor, data
+-    Despesa: id, orcamento_id, descricao, valor, data
 
 ## 👤 Autor
 
@@ -138,20 +138,20 @@ acompanha_obra/
 
 ## 🙏 Agradecimentos
 
-    Flutter - Framework incrível
+-    Flutter - Framework incrível
 
-    SQLite - Banco de dados leve e eficiente
+-    SQLite - Banco de dados leve e eficiente
 
-    Dart - Linguagem moderna e performática
+-    Dart - Linguagem moderna e performática
 
 ## 📌 Status do Projeto
 
-    🟡 Em Desenvolvimento - Versão Beta
+-    🟡 Em Desenvolvimento - Versão Beta
 
-    O projeto está em fase de testes e novas funcionalidades estão sendo implementadas.
-    Feedback e sugestões são bem-vindos!
+-    O projeto está em fase de testes e novas funcionalidades estão sendo implementadas.
+-    Feedback e sugestões são bem-vindos!
 
 ## 📞 Contato
 
-Para dúvidas, sugestões ou contribuições:
-📧 carfurlan@gmail.com
+- Para dúvidas, sugestões ou contribuições:
+- 📧 carfurlan@gmail.com
