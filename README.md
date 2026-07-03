@@ -98,7 +98,6 @@ flutter build apk --release  # Android
 flutter build ios --release  # iOS
 
 ## 📂 Estrutura do Projeto
-text
 
 acompanha_obra/
 ├── lib/
@@ -117,9 +116,9 @@ acompanha_obra/
 ├── pubspec.yaml         # Dependências e configurações
 └── README.md            # Este arquivo
 
-📊 Banco de Dados
+## 📊 Banco de Dados
 
-O aplicativo utiliza SQLite com as seguintes tabelas principais:
+### O aplicativo utiliza SQLite com as seguintes tabelas principais:
 
     Orcamento: id, nome, descricao, valor_orcado
 
@@ -127,15 +126,17 @@ O aplicativo utiliza SQLite com as seguintes tabelas principais:
 
     Despesa: id, orcamento_id, descricao, valor, data
 
-👤 Autor
+## 👤 Autor
 
-Carlos Furlan
-https://img.shields.io/badge/GitHub-furlancarlos-181717?logo=github
-https://img.shields.io/badge/LinkedIn-Carlos_Furlan-0A66C2?logo=linkedin
-📄 Licença
+### Carlos Alberto Furlan
+### https://img.shields.io/badge/GitHub-furlancarlos-181717?logo=github
+### https://img.shields.io/badge/LinkedIn-Carlos_Furlan-0A66C2?logo=linkedin
 
-Este projeto está sob a licença MIT - veja o arquivo LICENSE para mais detalhes.
-🙏 Agradecimentos
+## 📄 Licença
+
+- Este projeto está sob a licença MIT - veja o arquivo LICENSE para mais detalhes.
+
+## 🙏 Agradecimentos
 
     Flutter - Framework incrível
 
@@ -143,14 +144,14 @@ Este projeto está sob a licença MIT - veja o arquivo LICENSE para mais detalhe
 
     Dart - Linguagem moderna e performática
 
-📌 Status do Projeto
+## 📌 Status do Projeto
 
     🟡 Em Desenvolvimento - Versão Beta
 
     O projeto está em fase de testes e novas funcionalidades estão sendo implementadas.
     Feedback e sugestões são bem-vindos!
 
-📞 Contato
+## 📞 Contato
 
 Para dúvidas, sugestões ou contribuições:
-📧 carfurlan@gmail.com (substitua pelo seu e-mail real)
+📧 carfurlan@gmail.com
