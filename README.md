@@ -79,7 +79,7 @@ Ideal para:
 
 ### Passo a Passo
 
-1. **Clone o repositório**
+## 1. **Clone o repositório**
 ```bash
 git clone https://github.com/furlancarlos/acompanha_obra.git
 cd acompanha_obra
