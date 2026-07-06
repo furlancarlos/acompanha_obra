@@ -5,6 +5,7 @@
 
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'dart:developer' as developer;
 
 class DBHelper {
   static final DBHelper _instance = DBHelper._internal();
@@ -132,9 +133,7 @@ class DBHelper {
     await db.execute(
       'CREATE INDEX idx_despesa_orcamento ON despesa(orcamento_id)',
     );
-    await db.execute(
-      'CREATE INDEX idx_despesa_etapa ON despesa(etapa_id)',
-    );
+    await db.execute('CREATE INDEX idx_despesa_etapa ON despesa(etapa_id)');
     await db.execute('CREATE INDEX idx_etapa_orcamento ON etapa(orcamento_id)');
     await db.execute('CREATE INDEX idx_etapa_status ON etapa(status)');
     await db.execute('CREATE INDEX idx_despesa_data ON despesa(data)');
@@ -147,13 +146,22 @@ class DBHelper {
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // Versão 1 → 2: Adiciona unidade_id em produto
     if (oldVersion < 2) {
       try {
         await db.execute('ALTER TABLE produto ADD COLUMN unidade_id INTEGER');
-        print('✅ Coluna unidade_id adicionada à tabela produto');
-      } catch (e) {
-        print('⚠️ Erro ao adicionar unidade_id: $e');
+
+        developer.log(
+          'Coluna unidade_id adicionada à tabela produto',
+          name: 'DB_UPGRADE',
+        );
+      } catch (e, stackTrace) {
+        // 2. Captura o objeto de erro e o rastro de execução
+        developer.log(
+          'Erro ao adicionar unidade_id',
+          name: 'DB_UPGRADE',
+          error: e,
+          stackTrace: stackTrace,
+        );
       }
     }
 
@@ -165,9 +173,17 @@ class DBHelper {
       try {
         await db.execute('ALTER TABLE despesa ADD COLUMN orcamento_id INTEGER');
         await db.execute('ALTER TABLE despesa ADD COLUMN etapa_id INTEGER');
-        print('✅ Colunas orcamento_id e etapa_id adicionadas à tabela despesa');
-      } catch (e) {
-        print('⚠️ Erro ao adicionar colunas em despesa: $e');
+        developer.log(
+          'Coluna orcamento_id e etapa_id adicionadas à tabela despesa',
+          name: 'DB_UPGRADE',
+        );
+      } catch (e, stackTrace) {
+        developer.log(
+          'Erro ao adicionar orcamento_id e etapa_id',
+          name: 'DB_UPGRADE',
+          error: e,
+          stackTrace: stackTrace,
+        );
       }
     }
 
@@ -175,9 +191,17 @@ class DBHelper {
     if (oldVersion < 5) {
       try {
         await db.execute('ALTER TABLE etapa ADD COLUMN valor_orcado REAL');
-        print('✅ Coluna valor_orcado adicionada à tabela etapa');
-      } catch (e) {
-        print('⚠️ Erro ao adicionar valor_orcado: $e');
+        developer.log(
+          'Coluna valor_orcado adicionada à tabela etapa',
+          name: 'DB_UPGRADE',
+        );
+      } catch (e, stackTrace) {
+        developer.log(
+          'Erro ao adicionar valor_orcado',
+          name: 'DB_UPGRADE',
+          error: e,
+          stackTrace: stackTrace,
+        );
       }
     }
   }
@@ -277,5 +301,16 @@ class DBHelper {
       await _db!.close();
       _db = null;
     }
+  }
+
+  /// Obtém o caminho completo do banco de dados
+  Future<String> getDatabasePath() async {
+    final databasesPath = await getDatabasesPath();
+    return join(databasesPath, 'acompanha_obra.db');
+  }
+
+  /// Fecha a conexão com o banco (usado para backup/restauração)
+  Future<void> closeConnection() async {
+    await close();
   }
 }

@@ -18,7 +18,7 @@ class _CadastroUnidadePageState extends State<CadastroUnidadePage> {
   final _formKey = GlobalKey<FormState>();
   final _descricaoController = TextEditingController();
   final _siglaController = TextEditingController();
-  
+
   bool _isLoading = false;
   final _unidadeDAO = UnidadeDAO();
 
@@ -49,12 +49,11 @@ class _CadastroUnidadePageState extends State<CadastroUnidadePage> {
 
     try {
       // Verifica se já existe uma unidade com o mesmo nome (evita duplicidade)
-      final existe = await _unidadeDAO.existsByDescricao(_descricaoController.text);
+      final existe = await _unidadeDAO.existsByDescricao(
+        _descricaoController.text,
+      );
       if (existe && widget.unidade == null) {
-        _mostrarMensagem(
-          'Já existe uma unidade com este nome!',
-          isErro: true,
-        );
+        _mostrarMensagem('Já existe uma unidade com este nome!', isErro: true);
         setState(() => _isLoading = false);
         return;
       }
@@ -73,8 +72,12 @@ class _CadastroUnidadePageState extends State<CadastroUnidadePage> {
         _mostrarMensagem('Unidade atualizada com sucesso!');
       }
 
+      if (!mounted) return;
+
       Navigator.pop(context, true);
     } catch (e) {
+      if (!mounted) return;
+
       _mostrarMensagem('Erro ao salvar: $e', isErro: true);
       setState(() => _isLoading = false);
     }
@@ -141,7 +144,7 @@ class _CadastroUnidadePageState extends State<CadastroUnidadePage> {
                         textCapitalization: TextCapitalization.words,
                         onFieldSubmitted: (_) => _salvar(),
                       ),
-                      
+
                       const SizedBox(height: 16),
 
                       // Campo: Sigla (opcional)
@@ -198,18 +201,16 @@ class _CadastroUnidadePageState extends State<CadastroUnidadePage> {
                 ),
               ] else ...[
                 // Indicador de carregamento
-                const Center(
-                  child: CircularProgressIndicator(),
-                ),
+                const Center(child: CircularProgressIndicator()),
               ],
 
               const SizedBox(height: 16),
 
               // Texto informativo
               Text(
-                isEditando 
-                  ? '🔄 Editando unidade existente' 
-                  : '💡 Cadastre uma nova unidade de medida',
+                isEditando
+                    ? '🔄 Editando unidade existente'
+                    : '💡 Cadastre uma nova unidade de medida',
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.grey.shade600,

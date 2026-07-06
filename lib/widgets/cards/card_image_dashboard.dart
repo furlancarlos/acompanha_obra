@@ -35,7 +35,7 @@ class CardImageDashboard extends StatelessWidget {
                 gradient: LinearGradient(
                   colors: [
                     const Color(0xFF1B3A5C),
-                    const Color(0xFF1B3A5C).withOpacity(0.7),
+                    const Color(0xFF1B3A5C).withValues(alpha: 0.7),
                   ],
                 ),
               ),

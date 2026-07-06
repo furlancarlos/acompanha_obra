@@ -93,7 +93,7 @@ class CardListaOrcamentos extends StatelessWidget {
                   isSelecionado: isSelecionado,
                   onTap: () => onOrcamentoSelecionado(orcamento),
                 );
-              }).toList(),
+              }),
 
             const SizedBox(height: 8),
 

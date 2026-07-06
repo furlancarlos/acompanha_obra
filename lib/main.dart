@@ -16,6 +16,7 @@ import 'dao/orcamento_dao.dart';
 import 'dao/etapa_dao.dart';
 import 'models/orcamento.dart';
 import 'models/etapa.dart';
+import 'dart:developer' as developer;
 
 void main() {
   runApp(const AcompanhaObraApp());
@@ -124,13 +125,19 @@ class _HomePageState extends State<HomePage> {
       final totalGasto = await _despesaDAO.getTotalGastoPorOrcamento(
         _orcamentoSelecionado!.id!
       );
+
+      if (!mounted) return;
       
       setState(() {
         _valorOrcamento = totalOrcamento;
         _valorGasto = totalGasto;
       });
-    } catch (e) {
-      print('Erro ao carregar dados financeiros: $e');
+    } catch (e, stackTrace) {
+      developer.log(
+        'Erro ao carregar dados financeiros',
+        error: e,
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -145,15 +152,18 @@ class _HomePageState extends State<HomePage> {
     final etapas = await _etapaDAO.getByOrcamento(
       _orcamentoSelecionado!.id!
     );
-    print('📊 Etapas carregadas: ${etapas.length}');  // ← ADICIONAR
+    developer.log(
+      'Etapas carregadas: ${etapas.length}',
+      name: 'CARREGAR_ETAPAS',
+    );
     for (var e in etapas) {
-      print('   - ${e.nome}: ${(e.progresso * 100).toInt()}%');
+      developer.log('   - ${e.nome}: ${(e.progresso * 100).toInt()}%');
     }
     setState(() {
       _etapas = etapas;
     });
   } catch (e) {
-    print('❌ Erro ao carregar etapas: $e');
+    developer.log('Erro ao carregar etapas', error: e);
   }
 }
 
@@ -217,15 +227,7 @@ class _HomePageState extends State<HomePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Card 01: Gráfico de Etapas (NOVO)
-                    if (_orcamentoSelecionado != null)
-                      CardGraficoEtapas(
-                        etapas: _etapas,
-                        alturaMaxima: 140,
-                      ),
-                    const SizedBox(height: 16),
-
-                    // Card 02: Resumo do Orçamento Selecionado
+                    // Card 01: Resumo do Orçamento Selecionado
                     if (_orcamentoSelecionado != null)
                       CardResumoOrcamento(
                         orcamento: _orcamentoSelecionado!,
@@ -239,6 +241,14 @@ class _HomePageState extends State<HomePage> {
                       ),
                     const SizedBox(height: 16),
 
+                    // Card 02: Gráfico de Etapas
+                    if (_orcamentoSelecionado != null)
+                      CardGraficoEtapas(
+                        etapas: _etapas,
+                        alturaMaxima: 140,
+                      ),
+                    const SizedBox(height: 16),
+                    
                     // Card 03: Lista de Orçamentos
                     CardListaOrcamentos(
                       orcamentos: _orcamentos,

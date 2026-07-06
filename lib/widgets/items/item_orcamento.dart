@@ -27,7 +27,7 @@ class ItemOrcamento extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 6),
         decoration: BoxDecoration(
           color: isSelecionado
-              ? const Color(0xFF1B3A5C).withOpacity(0.08)
+              ? const Color(0xFF1B3A5C).withValues(alpha: 0.08)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: isSelecionado
@@ -42,7 +42,7 @@ class ItemOrcamento extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isSelecionado
                     ? const Color(0xFF1B3A5C)
-                    : const Color(0xFF1B3A5C).withOpacity(0.1),
+                    : const Color(0xFF1B3A5C).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Icon(

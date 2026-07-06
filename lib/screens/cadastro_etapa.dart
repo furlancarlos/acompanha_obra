@@ -186,8 +186,13 @@ class _CadastroEtapaPageState extends State<CadastroEtapaPage> {
         _mostrarMensagem('Etapa atualizada com sucesso!');
       }
 
+      if (!mounted) return;
+
       Navigator.pop(context, true);
     } catch (e) {
+
+      if (!mounted) return;
+
       _mostrarMensagem('Erro ao salvar: $e', isErro: true);
       setState(() => _isLoading = false);
     }
@@ -273,7 +278,7 @@ class _CadastroEtapaPageState extends State<CadastroEtapaPage> {
                               prefixIcon: Icon(Icons.attach_money),
                               border: OutlineInputBorder(),
                             ),
-                            value: _selectedOrcamento,
+                            initialValue: _selectedOrcamento,
                             isExpanded: true,
                             items: _orcamentos.map((Orcamento orcamento) {
                               return DropdownMenuItem<Orcamento>(
@@ -371,7 +376,7 @@ class _CadastroEtapaPageState extends State<CadastroEtapaPage> {
                             prefixIcon: Icon(Icons.info_outline),
                             border: OutlineInputBorder(),
                           ),
-                          value: _selectedStatus,
+                          initialValue: _selectedStatus,
                           isExpanded: true,
                           items: _statusList.map((String status) {
                             return DropdownMenuItem<String>(

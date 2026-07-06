@@ -109,8 +109,13 @@ class _CadastroProdutoPageState extends State<CadastroProdutoPage> {
         _mostrarMensagem('Produto atualizado com sucesso!');
       }
 
+      if (!mounted) return;
+
       Navigator.pop(context, true);
     } catch (e) {
+      
+      if (!mounted) return;
+
       _mostrarMensagem('Erro ao salvar: $e', isErro: true);
       setState(() => _isLoading = false);
     }
@@ -185,9 +190,9 @@ class _CadastroProdutoPageState extends State<CadastroProdutoPage> {
                           textCapitalization: TextCapitalization.words,
                           onFieldSubmitted: (_) => _salvar(),
                         ),
-          
+
                         const SizedBox(height: 16),
-          
+
                         // Campo: Descrição (opcional)
                         TextFormField(
                           controller: _descricaoController,
@@ -201,9 +206,9 @@ class _CadastroProdutoPageState extends State<CadastroProdutoPage> {
                           textCapitalization: TextCapitalization.sentences,
                           onFieldSubmitted: (_) => _salvar(),
                         ),
-          
+
                         const SizedBox(height: 16),
-          
+
                         // Dropdown: Unidade de Medida (Obrigatório)
                         if (_isLoadingUnidades)
                           const Padding(
@@ -221,7 +226,7 @@ class _CadastroProdutoPageState extends State<CadastroProdutoPage> {
                                     prefixIcon: Icon(Icons.straighten),
                                     border: OutlineInputBorder(),
                                   ),
-                                  value: _selectedUnidade,
+                                  initialValue: _selectedUnidade,
                                   isExpanded: true,
                                   items: _unidades.map((Unidade unidade) {
                                     return DropdownMenuItem<Unidade>(
@@ -252,7 +257,8 @@ class _CadastroProdutoPageState extends State<CadastroProdutoPage> {
                                   final resultado = await Navigator.push<bool>(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) => const CadastroUnidadePage(),
+                                      builder: (_) =>
+                                          const CadastroUnidadePage(),
                                     ),
                                   );
                                   if (resultado == true) {
@@ -266,9 +272,9 @@ class _CadastroProdutoPageState extends State<CadastroProdutoPage> {
                     ),
                   ),
                 ),
-          
+
                 const SizedBox(height: 24),
-          
+
                 // Botões de ação
                 if (!_isLoading) ...[
                   Row(
@@ -305,9 +311,9 @@ class _CadastroProdutoPageState extends State<CadastroProdutoPage> {
                   // Indicador de carregamento
                   const Center(child: CircularProgressIndicator()),
                 ],
-          
+
                 const SizedBox(height: 16),
-          
+
                 // Texto informativo
                 Text(
                   isEditando

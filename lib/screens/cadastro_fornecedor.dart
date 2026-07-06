@@ -84,8 +84,13 @@ class _CadastroFornecedorPageState extends State<CadastroFornecedorPage> {
         _mostrarMensagem('Fornecedor atualizado com sucesso!');
       }
 
+      if (!mounted) return;
+
       Navigator.pop(context, true);
     } catch (e) {
+      
+      if (!mounted) return;
+
       _mostrarMensagem('Erro ao salvar: $e', isErro: true);
       setState(() => _isLoading = false);
     }
