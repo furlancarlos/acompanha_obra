@@ -79,78 +79,79 @@ Ideal para:
 
 ### Passo a Passo
 
-1. **Clone o repositório**
-```bash
+### 1. **Clone o repositório**
+
 git clone https://github.com/furlancarlos/acompanha_obra.git
 cd acompanha_obra
 
-2. Instale as dependências
+### 2. Instale as dependências
 
 flutter pub get
 
-    Execute o projeto
+    - Execute o projeto
 
 flutter run
 
-    Para build de produção
+    - Para build de produção
 
 flutter build apk --release  # Android
 flutter build ios --release  # iOS
 
-📂 Estrutura do Projeto
-text
+## 📂 Estrutura do Projeto
 
-acompanha_obra/
-├── lib/
-│   ├── models/          # Classes de modelo (Orçamento, Etapa, Despesa)
-│   ├── screens/         # Telas do aplicativo
-│   │   ├── home_screen.dart
-│   │   ├── orcamento_screen.dart
-│   │   └── ...
-│   ├── widgets/         # Componentes reutilizáveis
-│   └── database/        # Configuração e helpers do SQLite
-├── assets/
-│   ├── construcao.png   # Ícone do app
-│   └── screenshots/     # Imagens para o README
-├── android/             # Configurações Android
-├── ios/                 # Configurações iOS
-├── pubspec.yaml         # Dependências e configurações
-└── README.md            # Este arquivo
+- acompanha_obra/
+- ├── lib/
+- │   ├── models/          # Classes de modelo (Orçamento, Etapa, Despesa)
+- │   ├── screens/         # Telas do aplicativo
+- │   │   ├── home_screen.dart
+- │   │   ├── orcamento_screen.dart
+- │   │   └── ...
+- │   ├── widgets/         # Componentes reutilizáveis
+- │   └── database/        # Configuração e helpers do SQLite
+- ├── assets/
+- │   ├── construcao.png   # Ícone do app
+- │   └── screenshots/     # Imagens para o README
+- ├── android/             # Configurações Android
+- ├── ios/                 # Configurações iOS
+- ├── pubspec.yaml         # Dependências e configurações
+- └── README.md            # Este arquivo
 
-📊 Banco de Dados
+## 📊 Banco de Dados
 
-O aplicativo utiliza SQLite com as seguintes tabelas principais:
+### O aplicativo utiliza SQLite com as seguintes tabelas principais:
 
-    Orcamento: id, nome, descricao, valor_orcado
+-    Orcamento: id, nome, descricao, valor_orcado
 
-    Etapa: id, orcamento_id, nome, status (crítico/em_andamento/concluído/pendente), concluida
+-    Etapa: id, orcamento_id, nome, status (crítico/em_andamento/concluído/pendente), concluida
 
-    Despesa: id, orcamento_id, descricao, valor, data
+-    Despesa: id, orcamento_id, descricao, valor, data
 
-👤 Autor
+## 👤 Autor
 
-Carlos Furlan
-https://img.shields.io/badge/GitHub-furlancarlos-181717?logo=github
-https://img.shields.io/badge/LinkedIn-Carlos_Furlan-0A66C2?logo=linkedin
-📄 Licença
+### Carlos Alberto Furlan
+### https://img.shields.io/badge/GitHub-furlancarlos-181717?logo=github
+### https://img.shields.io/badge/LinkedIn-Carlos_Furlan-0A66C2?logo=linkedin
 
-Este projeto está sob a licença MIT - veja o arquivo LICENSE para mais detalhes.
-🙏 Agradecimentos
+## 📄 Licença
 
-    Flutter - Framework incrível
+- Este projeto está sob a licença MIT - veja o arquivo LICENSE para mais detalhes.
 
-    SQLite - Banco de dados leve e eficiente
+## 🙏 Agradecimentos
 
-    Dart - Linguagem moderna e performática
+-    Flutter - Framework incrível
 
-📌 Status do Projeto
+-    SQLite - Banco de dados leve e eficiente
 
-    🟡 Em Desenvolvimento - Versão Beta
+-    Dart - Linguagem moderna e performática
 
-    O projeto está em fase de testes e novas funcionalidades estão sendo implementadas.
-    Feedback e sugestões são bem-vindos!
+## 📌 Status do Projeto
 
-📞 Contato
+-    🟡 Em Desenvolvimento - Versão Beta
 
-Para dúvidas, sugestões ou contribuições:
-📧 carfurlan@gmail.com (substitua pelo seu e-mail real)
+-    O projeto está em fase de testes e novas funcionalidades estão sendo implementadas.
+-    Feedback e sugestões são bem-vindos!
+
+## 📞 Contato
+
+- Para dúvidas, sugestões ou contribuições:
+- 📧 carfurlan@gmail.com
