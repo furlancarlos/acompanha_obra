@@ -1,3 +1,8 @@
+# .gitignore
+# Arquivo de definição dos arquivos que não devem ser versionados pelo git.
+# Para ignorar arquivos específicos, use o arquivo .git/info/exclude.
+#==============================================================================#
+
 # Miscellaneous
 *.class
 *.log
@@ -67,3 +72,7 @@ GoogleService-Info.plist
 test/.test_coverage/
 lerna-debug.log
 npm-debug.log*
+
+# Arquivos de backup
+bkp_*.dart
+test/
