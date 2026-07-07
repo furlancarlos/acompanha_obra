@@ -1,6 +1,6 @@
 // widgets/cards/card_grafico_etapas.dart
-// Card que exibe um gráfico de barras com a evolução das etapas do orçamento
-// Card exibido na tela main de orçamentos. Card 01.
+// Card que exibe o progresso das etapas de forma ordenada e horizontal
+// Card exibido na tela main de orçamentos. Card 02.
 //============================================================================//
 
 import 'package:flutter/material.dart';
@@ -8,7 +8,7 @@ import '../../models/etapa.dart';
 
 class CardGraficoEtapas extends StatelessWidget {
   final List<Etapa> etapas;
-  final double alturaMaxima;
+  final double alturaMaxima; // Mantida por compatibilidade de assinatura
 
   const CardGraficoEtapas({
     super.key,
@@ -22,9 +22,14 @@ class CardGraficoEtapas extends StatelessWidget {
       return _buildEmptyState();
     }
 
+    // Calcula o progresso total geral
     final progressoTotal =
         etapas.fold<double>(0.0, (sum, etapa) => sum + etapa.progresso) /
         etapas.length;
+
+    // 1. Cria uma cópia da lista e ordena de forma CRESCENTE pelo percentual de progresso
+    final etapasOrdenadas = List<Etapa>.from(etapas)
+      ..sort((a, b) => a.progresso.compareTo(b.progresso));
 
     return Card(
       elevation: 4,
@@ -34,7 +39,7 @@ class CardGraficoEtapas extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Título
+            // Título e indicador geral
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -52,7 +57,7 @@ class CardGraficoEtapas extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    '${(progressoTotal * 100).toInt()}%',
+                    '${(progressoTotal * 100).toInt()}% Total',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
@@ -62,92 +67,64 @@ class CardGraficoEtapas extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
 
-            // Gráfico de Barras
-            // widgets/cards/card_grafico_etapas.dart - Com status textual
-            SizedBox(
-              height: alturaMaxima,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: etapas.map((etapa) {
-                  final progresso = etapa.progresso.clamp(0.0, 1.0);
-                  final altura = progresso * alturaMaxima;
-                  final cor = _getProgressColor(progresso);
-                  final status = _getStatusText(progresso); // ← MANTER
+            // 2. Gráfico usando Barras de Progresso Horizontais
+            Column(
+              children: etapasOrdenadas.map((etapa) {
+                final progresso = etapa.progresso.clamp(0.0, 1.0);
+                final cor = _getProgressColor(progresso);
+                final status = _getStatusText(progresso);
 
-                  return Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Linha de informações superior da etapa
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          // Valor percentual
-                          Text(
-                            '${(progresso * 100).toInt()}%',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-
-                          // Barra
                           Expanded(
-                            child: Container(
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade200,
-                                borderRadius: BorderRadius.circular(8),
+                            child: Text(
+                              etapa.nome, // Agora pode exibir o nome completo se couber
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
                               ),
-                              child: Align(
-                                alignment: Alignment.bottomCenter,
-                                child: Container(
-                                  width: double.infinity,
-                                  height: altura > 0 ? altura : 6,
-                                  decoration: BoxDecoration(
-                                    color: cor,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          const SizedBox(height: 4),
-
-                          // Nome da etapa (abreviado)
                           Text(
-                            _abreviarNome(etapa.nome),
+                            '$status (${(progresso * 100).toInt()}%)',
                             style: TextStyle(
-                              fontSize: 10,
-                              color: Colors.grey.shade700,
+                              fontSize: 12,
                               fontWeight: FontWeight.w500,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-
-                          // ← ADICIONAR STATUS TEXTUAL (OPCIONAL)
-                          Text(
-                            status,
-                            style: TextStyle(
-                              fontSize: 8,
                               color: cor,
-                              fontWeight: FontWeight.w400,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
-                    ),
-                  );
-                }).toList(),
-              ),
+                      const SizedBox(height: 6),
+                      
+                      // A barra de progresso linear propriamente dita
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: LinearProgressIndicator(
+                          value: progresso,
+                          minHeight: 18,
+                          backgroundColor: Colors.grey.shade200,
+                          valueColor: AlwaysStoppedAnimation<Color>(cor),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
 
             // Legenda
             Row(
@@ -233,10 +210,5 @@ class CardGraficoEtapas extends StatelessWidget {
     if (progresso >= 0.4) return 'Em andamento';
     if (progresso >= 0.1) return 'Iniciado';
     return 'Pendente';
-  }
-
-  String _abreviarNome(String nome) {
-    if (nome.length <= 6) return nome;
-    return nome.substring(0, 6);
   }
 }

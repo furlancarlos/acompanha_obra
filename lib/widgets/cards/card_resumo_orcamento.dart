@@ -155,7 +155,7 @@ class CardResumoOrcamento extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 child: LinearProgressIndicator(
                   value: percentual.clamp(0.0, 1.0),
-                  minHeight: 20,
+                  minHeight: 18,
                   backgroundColor: Colors.transparent,
                   color: percentual > 0.8
                       ? Colors.red.shade700

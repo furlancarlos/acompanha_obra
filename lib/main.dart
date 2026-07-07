@@ -10,6 +10,8 @@ import 'package:acompanha_obra/form/lista_orcamento.dart';
 import 'package:acompanha_obra/widgets/cards/card_grafico_etapas.dart';
 import 'package:acompanha_obra/widgets/cards/card_resumo_orcamento.dart';
 import 'package:acompanha_obra/widgets/cards/card_lista_orcamentos.dart';
+// 🔧 IMPORTA A NOVA TELA DE CONFIGURAÇÕES EM ABAS
+import 'package:acompanha_obra/screens/configuracoes_page.dart'; 
 import 'package:flutter/material.dart';
 import 'dao/despesa_dao.dart';
 import 'dao/orcamento_dao.dart';
@@ -66,7 +68,7 @@ class _HomePageState extends State<HomePage> {
   // Dados
   List<Orcamento> _orcamentos = [];
   Orcamento? _orcamentoSelecionado;
-  List<Etapa> _etapas = [];  // ← NOVO
+  List<Etapa> _etapas = [];
   
   // Resumo financeiro do orçamento selecionado
   double _valorOrcamento = 0;
@@ -75,7 +77,7 @@ class _HomePageState extends State<HomePage> {
 
   final _orcamentoDAO = OrcamentoDAO();
   final _despesaDAO = DespesaDAO();
-  final _etapaDAO = EtapaDAO();  // ← NOVO
+  final _etapaDAO = EtapaDAO();
 
   @override
   void initState() {
@@ -99,8 +101,8 @@ class _HomePageState extends State<HomePage> {
       });
       
       if (_orcamentoSelecionado != null) {
-      await _etapaDAO.atualizarProgressoEtapas(_orcamentoSelecionado!.id!);
-    }
+        await _etapaDAO.atualizarProgressoEtapas(_orcamentoSelecionado!.id!);
+      }
 
       await _carregarDadosFinanceiros();
       await _carregarEtapas();
@@ -141,31 +143,30 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // ← NOVO MÉTODO
   Future<void> _carregarEtapas() async {
-  if (_orcamentoSelecionado == null) {
-    setState(() => _etapas = []);
-    return;
-  }
-
-  try {
-    final etapas = await _etapaDAO.getByOrcamento(
-      _orcamentoSelecionado!.id!
-    );
-    developer.log(
-      'Etapas carregadas: ${etapas.length}',
-      name: 'CARREGAR_ETAPAS',
-    );
-    for (var e in etapas) {
-      developer.log('   - ${e.nome}: ${(e.progresso * 100).toInt()}%');
+    if (_orcamentoSelecionado == null) {
+      setState(() => _etapas = []);
+      return;
     }
-    setState(() {
-      _etapas = etapas;
-    });
-  } catch (e) {
-    developer.log('Erro ao carregar etapas', error: e);
+
+    try {
+      final etapas = await _etapaDAO.getByOrcamento(
+        _orcamentoSelecionado!.id!
+      );
+      developer.log(
+        'Etapas carregadas: ${etapas.length}',
+        name: 'CARREGAR_ETAPAS',
+      );
+      for (var e in etapas) {
+        developer.log('   - ${e.nome}: ${(e.progresso * 100).toInt()}%');
+      }
+      setState(() {
+        _etapas = etapas;
+      });
+    } catch (e) {
+      developer.log('Erro ao carregar etapas', error: e);
+    }
   }
-}
 
   void _mostrarMensagem(String mensagem, {bool isErro = false}) {
     if (!mounted) return;
@@ -184,12 +185,11 @@ class _HomePageState extends State<HomePage> {
       _orcamentoSelecionado = orcamento;
     });
    
-  // 🔧 ATUALIZA O PROGRESSO DAS ETAPAS
-  _etapaDAO.atualizarProgressoEtapas(orcamento.id!).then((_) {
-    _carregarDadosFinanceiros();
-    _carregarEtapas();
-  });
-}
+    _etapaDAO.atualizarProgressoEtapas(orcamento.id!).then((_) {
+      _carregarDadosFinanceiros();
+      _carregarEtapas();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -213,7 +213,7 @@ class _HomePageState extends State<HomePage> {
           ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
-            onPressed: () {},
+            onPressed: _abrirConfiguracoes,
           ),
         ],
       ),
@@ -227,7 +227,6 @@ class _HomePageState extends State<HomePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Card 01: Resumo do Orçamento Selecionado
                     if (_orcamentoSelecionado != null)
                       CardResumoOrcamento(
                         orcamento: _orcamentoSelecionado!,
@@ -241,7 +240,6 @@ class _HomePageState extends State<HomePage> {
                       ),
                     const SizedBox(height: 16),
 
-                    // Card 02: Gráfico de Etapas
                     if (_orcamentoSelecionado != null)
                       CardGraficoEtapas(
                         etapas: _etapas,
@@ -249,7 +247,6 @@ class _HomePageState extends State<HomePage> {
                       ),
                     const SizedBox(height: 16),
                     
-                    // Card 03: Lista de Orçamentos
                     CardListaOrcamentos(
                       orcamentos: _orcamentos,
                       orcamentoSelecionado: _orcamentoSelecionado,
@@ -309,5 +306,19 @@ class _HomePageState extends State<HomePage> {
     if (resultado == true) {
       _carregarDados();
     }
+  }
+
+  // 🔧 FUNÇÃO ATUALIZADA REPASANDO O ORÇAMENTO SELECIONADO À NOVA TELA
+  void _abrirConfiguracoes() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ConfiguracoesPage(
+          orcamentoId: _orcamentoSelecionado?.id,
+        ),
+      ),
+    );
+    // Ao voltar das configurações (caso algo mude ou backup seja feito), recarrega
+    _carregarDados();
   }
 }

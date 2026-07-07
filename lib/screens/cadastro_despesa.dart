@@ -1,5 +1,5 @@
 // cadastro_despesa.dart
-// Arquivo de definição da tela de cadastro de despesa.
+// Arquivo de definição da tela de cadastro de despesa (Suporta múltiplos itens e edição).
 //============================================================================//
 
 import 'package:flutter/material.dart';
@@ -14,14 +14,35 @@ import '../models/produto.dart';
 import '../models/etapa.dart';
 
 // importando as telas auxiliares
-import '../form/lista_fornecedor.dart';
-import '../form/lista_produto.dart';
+//import '../form/lista_fornecedor.dart';
+//import '../form/lista_produto.dart';
+
+// Classe auxiliar para gerenciar os itens adicionados dinamicamente na nota
+class ItemDespesaTemporario {
+  Produto produto;
+  double quantidade;
+  double valorUnitario;
+
+  ItemDespesaTemporario({
+    required this.produto,
+    required this.quantidade,
+    required this.valorUnitario,
+  });
+
+  double get valorTotal => quantidade * valorUnitario;
+}
 
 class CadastroDespesaPage extends StatefulWidget {
   final int? orcamentoId;
   final int? etapaId;
+  final Despesa? despesaAntiga; // ✏️ Parâmetro para modo de edição
 
-  const CadastroDespesaPage({super.key, this.orcamentoId, this.etapaId});
+  const CadastroDespesaPage({
+    super.key,
+    this.orcamentoId,
+    this.etapaId,
+    this.despesaAntiga,
+  });
 
   @override
   State<CadastroDespesaPage> createState() => _CadastroDespesaPageState();
@@ -35,19 +56,23 @@ class _CadastroDespesaPageState extends State<CadastroDespesaPage> {
   Produto? _selectedProduto;
   Etapa? _selectedEtapa;
 
-  // Listas para popular os dropdowns
+  // Listas locais
   List<Fornecedor> _fornecedores = [];
   List<Produto> _produtos = [];
   List<Etapa> _etapas = [];
   bool _dadosCarregados = false;
 
-  // Controllers
+  // Lista de itens adicionados nesta nota/despesa
+  final List<ItemDespesaTemporario> _itensAdicionados = [];
+
+  // Controllers para inclusão do item atual
   final _quantidadeController = TextEditingController();
   final _valorUnitarioController = TextEditingController();
   final _valorTotalController = TextEditingController();
 
   DateTime _data = DateTime.now();
   bool _isLoading = false;
+  bool _isEdicao = false;
 
   // DAOs
   final _fornecedorDAO = FornecedorDAO();
@@ -64,22 +89,51 @@ class _CadastroDespesaPageState extends State<CadastroDespesaPage> {
   @override
   void initState() {
     super.initState();
-    _carregarDados();
-    _carregarEtapas();
+    _isEdicao = widget.despesaAntiga != null;
+    _carregarDadosERefatorar();
 
-    // Adiciona listeners para calcular o total automaticamente
-    _quantidadeController.addListener(_calcularTotal);
-    _valorUnitarioController.addListener(_calcularTotal);
+    _quantidadeController.addListener(_calcularTotalItemAtual);
+    _valorUnitarioController.addListener(_calcularTotalItemAtual);
   }
 
-  Future<void> _carregarDados() async {
+  Future<void> _carregarDadosERefatorar() async {
     try {
       final fornecedores = await _fornecedorDAO.getAll();
       final produtos = await _produtoDAO.getAll();
+      await _carregarEtapas();
 
       setState(() {
         _fornecedores = fornecedores;
         _produtos = produtos;
+
+        // Se for EDIÇÃO, popula os campos com os dados antigos
+        if (_isEdicao && widget.despesaAntiga != null) {
+          final antiga = widget.despesaAntiga!;
+          _data = DateTime.tryParse(antiga.data) ?? DateTime.now();
+
+          try {
+            _selectedFornecedor = _fornecedores.firstWhere(
+              (f) => f.id == antiga.fornecedorId,
+            );
+          } catch (_) {}
+
+          try {
+            _selectedEtapa = _etapas.firstWhere((e) => e.id == antiga.etapaId);
+          } catch (_) {}
+
+          // No modo edição, trazemos o item atual para a lista editável
+          try {
+            final prod = _produtos.firstWhere((p) => p.id == antiga.produtoId);
+            _itensAdicionados.add(
+              ItemDespesaTemporario(
+                produto: prod,
+                quantidade: antiga.quantidade,
+                valorUnitario: antiga.valorUnitario,
+              ),
+            );
+          } catch (_) {}
+        }
+
         _dadosCarregados = true;
       });
     } catch (e) {
@@ -93,12 +147,10 @@ class _CadastroDespesaPageState extends State<CadastroDespesaPage> {
       final etapas = await _etapaDAO.getByOrcamento(widget.orcamentoId!);
       setState(() {
         _etapas = etapas;
-        // Se veio com etapaId pré-selecionado, encontra na lista
-        if (widget.etapaId != null) {
+        if (widget.etapaId != null && !_isEdicao) {
           try {
             _selectedEtapa = _etapas.firstWhere((e) => e.id == widget.etapaId);
-          } catch (e) {
-            // Se não encontrar, pega o primeiro ou null
+          } catch (_) {
             _selectedEtapa = _etapas.isNotEmpty ? _etapas.first : null;
           }
         }
@@ -106,11 +158,7 @@ class _CadastroDespesaPageState extends State<CadastroDespesaPage> {
     }
   }
 
-  Future<void> _atualizarDados() async {
-    await _carregarDados();
-  }
-
-  void _calcularTotal() {
+  void _calcularTotalItemAtual() {
     final quantidade =
         double.tryParse(_quantidadeController.text.replaceAll(',', '.')) ?? 0;
     final valorUnitario =
@@ -123,13 +171,58 @@ class _CadastroDespesaPageState extends State<CadastroDespesaPage> {
         0;
 
     final valorTotal = quantidade * valorUnitario;
-
-    // Atualiza o campo de valor total com formatação
     if (valorTotal > 0) {
       _valorTotalController.text = _currencyFormat.format(valorTotal);
     } else {
       _valorTotalController.text = '';
     }
+  }
+
+  // ➕ Adiciona o item digitado à lista da nota fiscal
+  void _adicionarItemNaLista() {
+    if (_selectedProduto == null) {
+      _mostrarMensagem('Selecione um produto primeiro.', isErro: true);
+      return;
+    }
+
+    final qte =
+        double.tryParse(_quantidadeController.text.replaceAll(',', '.')) ?? 0;
+    final vUnit =
+        double.tryParse(
+          _valorUnitarioController.text
+              .replaceAll('R\$ ', '')
+              .replaceAll('.', '')
+              .replaceAll(',', '.'),
+        ) ??
+        0;
+
+    if (qte <= 0 || vUnit <= 0) {
+      _mostrarMensagem(
+        'Quantidade e Valor devem ser maiores que zero.',
+        isErro: true,
+      );
+      return;
+    }
+
+    setState(() {
+      _itensAdicionados.add(
+        ItemDespesaTemporario(
+          produto: _selectedProduto!,
+          quantidade: qte,
+          valorUnitario: vUnit,
+        ),
+      );
+
+      // Limpa os campos de inserção para o próximo item
+      _selectedProduto = null;
+      _quantidadeController.clear();
+      _valorUnitarioController.clear();
+      _valorTotalController.clear();
+    });
+  }
+
+  double _calcularTotalGeralNota() {
+    return _itensAdicionados.fold(0, (soma, item) => soma + item.valorTotal);
   }
 
   void _mostrarMensagem(String mensagem, {bool isErro = false}) {
@@ -144,7 +237,6 @@ class _CadastroDespesaPageState extends State<CadastroDespesaPage> {
     );
   }
 
-  // 🔧 MÉTODO PARA CALCULAR STATUS (MOVIDO PARA FORA DO _salvarDespesa)
   String _calcularStatus(double progresso) {
     if (progresso >= 1.0) return 'Concluído';
     if (progresso >= 0.7) return 'Em Andamento';
@@ -157,7 +249,7 @@ class _CadastroDespesaPageState extends State<CadastroDespesaPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Nova Despesa'),
+        title: Text(_isEdicao ? 'Alterar Despesa' : 'Nova Despesa / Nota'),
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
         elevation: 2,
@@ -166,448 +258,478 @@ class _CadastroDespesaPageState extends State<CadastroDespesaPage> {
         padding: const EdgeInsets.all(16.0),
         child: !_dadosCarregados
             ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Card com os campos
-                      Card(
-                        elevation: 4,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(20.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              // Dropdown Fornecedor
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: DropdownButtonFormField<Fornecedor>(
+            : Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // 1. DADOS CABEÇALHO DA NOTA (Fornecedor, Etapa, Data)
+                            Card(
+                              elevation: 2,
+                              child: Padding(
+                                padding: const EdgeInsets.all(12.0),
+                                child: Column(
+                                  children: [
+                                    DropdownButtonFormField<Fornecedor>(
                                       decoration: const InputDecoration(
                                         labelText: 'Fornecedor',
-                                        hintText: 'Selecione um fornecedor',
                                         prefixIcon: Icon(Icons.business),
                                         border: OutlineInputBorder(),
                                       ),
                                       initialValue: _selectedFornecedor,
                                       isExpanded: true,
-                                      items: _fornecedores.map((
-                                        Fornecedor fornecedor,
-                                      ) {
+                                      items: _fornecedores.map((f) {
                                         return DropdownMenuItem<Fornecedor>(
-                                          value: fornecedor,
-                                          child: Text(fornecedor.nome),
+                                          value: f,
+                                          child: Text(f.nome),
                                         );
                                       }).toList(),
-                                      onChanged: (Fornecedor? newValue) {
-                                        setState(() {
-                                          _selectedFornecedor = newValue;
-                                        });
-                                      },
-                                      validator: (value) {
-                                        if (value == null) {
-                                          return 'Selecione um fornecedor';
-                                        }
-                                        return null;
-                                      },
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.add_circle,
-                                      color: Colors.green,
-                                    ),
-                                    tooltip: 'Cadastrar novo fornecedor',
-                                    onPressed: () async {
-                                      final resultado = await Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              const ListaFornecedorPage(),
-                                        ),
-                                      );
-                                      if (resultado == true) {
-                                        await _atualizarDados();
-                                      }
-                                    },
-                                  ),
-                                ],
-                              ),
-
-                              const SizedBox(height: 16),
-
-                              // Dropdown Produto
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: DropdownButtonFormField<Produto>(
-                                      decoration: const InputDecoration(
-                                        labelText: 'Produto',
-                                        hintText: 'Selecione um produto',
-                                        prefixIcon: Icon(
-                                          Icons.production_quantity_limits,
-                                        ),
-                                        border: OutlineInputBorder(),
+                                      onChanged: (val) => setState(
+                                        () => _selectedFornecedor = val,
                                       ),
-                                      initialValue: _selectedProduto,
-                                      isExpanded: true,
-                                      items: _produtos.map((Produto produto) {
-                                        return DropdownMenuItem<Produto>(
-                                          value: produto,
-                                          child: Text(produto.nome),
-                                        );
-                                      }).toList(),
-                                      onChanged: (Produto? newValue) {
-                                        setState(() {
-                                          _selectedProduto = newValue;
-                                          // Limpa os campos quando muda o produto
-                                          _quantidadeController.clear();
-                                          _valorUnitarioController.clear();
-                                          _valorTotalController.clear();
-                                        });
-                                      },
-                                      validator: (value) {
-                                        if (value == null) {
-                                          return 'Selecione um produto';
-                                        }
-                                        return null;
-                                      },
+                                      validator: (v) => v == null
+                                          ? 'Selecione o fornecedor'
+                                          : null,
                                     ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.add_circle,
-                                      color: Colors.green,
-                                    ),
-                                    tooltip: 'Cadastrar novo produto',
-                                    onPressed: () async {
-                                      final resultado = await Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              const ListaProdutoPage(),
+                                    const SizedBox(height: 12),
+                                    if (widget.orcamentoId != null) ...[
+                                      DropdownButtonFormField<Etapa>(
+                                        decoration: const InputDecoration(
+                                          labelText: 'Etapa (opcional)',
+                                          prefixIcon: Icon(Icons.timeline),
+                                          border: OutlineInputBorder(),
                                         ),
-                                      );
-                                      if (resultado == true) {
-                                        await _atualizarDados();
-                                      }
-                                    },
-                                  ),
-                                ],
-                              ),
-
-                              const SizedBox(height: 16),
-
-                              // Campo Unidade (READ-ONLY - preenchido automaticamente)
-                              TextFormField(
-                                enabled: false,
-                                decoration: InputDecoration(
-                                  labelText: 'Unidade de Medida',
-                                  hintText:
-                                      _selectedProduto?.unidade?.toString() ??
-                                      'Selecione um produto primeiro',
-                                  prefixIcon: const Icon(Icons.straighten),
-                                  border: const OutlineInputBorder(),
-                                  filled: true,
-                                  fillColor: Colors.grey.shade50,
-                                ),
-                                initialValue:
-                                    _selectedProduto?.unidade?.toString() ?? '',
-                              ),
-
-                              const SizedBox(height: 16),
-
-                              // Dropdown Etapa (opcional)
-                              if (widget.orcamentoId != null) ...[
-                                DropdownButtonFormField<Etapa>(
-                                  decoration: const InputDecoration(
-                                    labelText: 'Etapa (opcional)',
-                                    hintText: 'Selecione uma etapa',
-                                    prefixIcon: Icon(Icons.timeline),
-                                    border: OutlineInputBorder(),
-                                  ),
-                                  initialValue: _selectedEtapa,
-                                  isExpanded: true,
-                                  items: _etapas.map((Etapa etapa) {
-                                    return DropdownMenuItem<Etapa>(
-                                      value: etapa,
-                                      child: Text(etapa.nome),
-                                    );
-                                  }).toList(),
-                                  onChanged: (Etapa? newValue) {
-                                    setState(() {
-                                      _selectedEtapa = newValue;
-                                    });
-                                  },
-                                ),
-                                const SizedBox(height: 16),
-                              ],
-
-                              // Campo Quantidade
-                              TextFormField(
-                                controller: _quantidadeController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Quantidade',
-                                  hintText: 'Digite a quantidade',
-                                  prefixIcon: Icon(Icons.numbers),
-                                  border: OutlineInputBorder(),
-                                ),
-                                keyboardType: TextInputType.number,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Informe a quantidade';
-                                  }
-                                  if (double.tryParse(
-                                        value.replaceAll(',', '.'),
-                                      ) ==
-                                      null) {
-                                    return 'Digite um número válido';
-                                  }
-                                  return null;
-                                },
-                                onFieldSubmitted: (_) => _salvarDespesa(),
-                              ),
-
-                              const SizedBox(height: 16),
-
-                              // Campo Valor Unitário (COM MÁSCARA MONETÁRIA)
-                              TextFormField(
-                                controller: _valorUnitarioController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Valor Unitário (R\$)',
-                                  hintText: 'Digite o valor unitário',
-                                  prefixIcon: Icon(Icons.attach_money),
-                                  border: OutlineInputBorder(),
-                                ),
-                                keyboardType:
-                                    const TextInputType.numberWithOptions(
-                                      decimal: true,
+                                        initialValue: _selectedEtapa,
+                                        isExpanded: true,
+                                        items: _etapas.map((e) {
+                                          return DropdownMenuItem<Etapa>(
+                                            value: e,
+                                            child: Text(e.nome),
+                                          );
+                                        }).toList(),
+                                        onChanged: (val) => setState(
+                                          () => _selectedEtapa = val,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                    ],
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.calendar_today,
+                                          color: Colors.blue.shade700,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Data: ${DateFormat('dd/MM/yyyy').format(_data)}',
+                                        ),
+                                        const Spacer(),
+                                        TextButton(
+                                          onPressed: () async {
+                                            final picked = await showDatePicker(
+                                              context: context,
+                                              initialDate: _data,
+                                              firstDate: DateTime(2000),
+                                              lastDate: DateTime(2100),
+                                            );
+                                            if (picked != null)
+                                              setState(() => _data = picked);
+                                          },
+                                          child: const Text('Alterar Data'),
+                                        ),
+                                      ],
                                     ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Informe o valor unitário';
-                                  }
-                                  final valorLimpo = value
-                                      .replaceAll('R\$ ', '')
-                                      .replaceAll('.', '')
-                                      .replaceAll(',', '.');
-                                  if (double.tryParse(valorLimpo) == null) {
-                                    return 'Digite um valor válido';
-                                  }
-                                  return null;
-                                },
-                                onFieldSubmitted: (_) => _salvarDespesa(),
-                              ),
-
-                              const SizedBox(height: 16),
-
-                              // Campo Valor Total (READ-ONLY - calculado automaticamente)
-                              TextFormField(
-                                controller: _valorTotalController,
-                                enabled: false,
-                                decoration: InputDecoration(
-                                  labelText: 'Valor Total (R\$)',
-                                  hintText: 'Calculado automaticamente',
-                                  prefixIcon: Icon(
-                                    Icons.calculate,
-                                    color: Colors.green,
-                                  ),
-                                  border: const OutlineInputBorder(),
-                                  filled: true,
-                                  fillColor: Colors.green.shade50,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Card da Data
-                      Card(
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.calendar_today,
-                                color: Colors.blue,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Data: ${DateFormat('dd/MM/yyyy').format(_data)}',
-                                style: const TextStyle(fontSize: 16),
-                              ),
-                              const Spacer(),
-                              ElevatedButton.icon(
-                                onPressed: () async {
-                                  final picked = await showDatePicker(
-                                    context: context,
-                                    initialDate: _data,
-                                    firstDate: DateTime(2000),
-                                    lastDate: DateTime(2100),
-                                  );
-                                  if (picked != null) {
-                                    setState(() => _data = picked);
-                                  }
-                                },
-                                icon: const Icon(Icons.edit_calendar),
-                                label: const Text('Alterar'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blue,
-                                  foregroundColor: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Botões de ação
-                      if (!_isLoading) ...[
-                        Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                onPressed: () => Navigator.pop(context),
-                                icon: const Icon(Icons.close),
-                                label: const Text('Cancelar'),
-                                style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 14,
-                                  ),
-                                  side: const BorderSide(color: Colors.grey),
+                                  ],
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed: _salvarDespesa,
-                                icon: const Icon(Icons.save),
-                                label: const Text('Salvar Despesa'),
-                                style: ElevatedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 14,
+                            const SizedBox(height: 10),
+
+                            // 2. INCLUSÃO DE ITENS (SÓ BLOQUEIA SE FOR EDIÇÃO DE UM ITEM FIXO JÁ EXISTENTE)
+                            if (!_isEdicao) ...[
+                              Card(
+                                color: Colors.blue.shade50,
+                                elevation: 3,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(12.0),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      const Text(
+                                        'Adicionar Item à Nota',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      DropdownButtonFormField<Produto>(
+                                        decoration: const InputDecoration(
+                                          labelText: 'Produto',
+                                          border: OutlineInputBorder(),
+                                          fillColor: Colors.white,
+                                          filled: true,
+                                        ),
+                                        initialValue: _selectedProduto,
+                                        isExpanded: true,
+                                        items: _produtos.map((p) {
+                                          return DropdownMenuItem<Produto>(
+                                            value: p,
+                                            child: Text(p.nome),
+                                          );
+                                        }).toList(),
+                                        onChanged: (val) => setState(
+                                          () => _selectedProduto = val,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: TextFormField(
+                                              controller: _quantidadeController,
+                                              decoration: const InputDecoration(
+                                                labelText: 'Qtd',
+                                                border: OutlineInputBorder(),
+                                                filled: true,
+                                                fillColor: Colors.white,
+                                              ),
+                                              keyboardType:
+                                                  TextInputType.number,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: TextFormField(
+                                              controller:
+                                                  _valorUnitarioController,
+                                              decoration: const InputDecoration(
+                                                labelText: 'V. Unit (R\$)',
+                                                border: OutlineInputBorder(),
+                                                filled: true,
+                                                fillColor: Colors.white,
+                                              ),
+                                              keyboardType:
+                                                  const TextInputType.numberWithOptions(
+                                                    decimal: true,
+                                                  ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      ElevatedButton.icon(
+                                        onPressed: _adicionarItemNaLista,
+                                        icon: const Icon(Icons.add),
+                                        label: const Text(
+                                          'Inserir Item na Nota',
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.blue.shade700,
+                                          foregroundColor: Colors.white,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  backgroundColor: Colors.green,
-                                  foregroundColor: Colors.white,
                                 ),
                               ),
+                            ],
+
+                            // 3. SEÇÃO DOS ITENS ADICIONADOS / EM EDIÇÃO
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 8.0),
+                              child: Text(
+                                'Itens da Nota:',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+
+                            if (_itensAdicionados.isEmpty)
+                              const Padding(
+                                padding: EdgeInsets.all(16.0),
+                                child: Center(
+                                  child: Text(
+                                    'Nenhum item adicionado à nota ainda.',
+                                  ),
+                                ),
+                              ),
+
+                            ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: _itensAdicionados.length,
+                              itemBuilder: (context, index) {
+                                final item = _itensAdicionados[index];
+                                return Card(
+                                  margin: const EdgeInsets.symmetric(
+                                    vertical: 4,
+                                  ),
+                                  child: ListTile(
+                                    title: Text(item.produto.nome),
+                                    subtitle: Text(
+                                      '${item.quantidade} x ${_currencyFormat.format(item.valorUnitario)} = ${_currencyFormat.format(item.valorTotal)}',
+                                    ),
+                                    trailing: _isEdicao
+                                        ? IconButton(
+                                            icon: const Icon(
+                                              Icons.edit,
+                                              color: Colors.orange,
+                                            ),
+                                            onPressed: () =>
+                                                _abrirDialogEdicaoItem(
+                                                  item,
+                                                  index,
+                                                ),
+                                          )
+                                        : IconButton(
+                                            icon: const Icon(
+                                              Icons.delete,
+                                              color: Colors.red,
+                                            ),
+                                            onPressed: () {
+                                              setState(
+                                                () => _itensAdicionados
+                                                    .removeAt(index),
+                                              );
+                                            },
+                                          ),
+                                  ),
+                                );
+                              },
                             ),
                           ],
                         ),
-                      ] else ...[
-                        const Center(child: CircularProgressIndicator()),
-                      ],
-
-                      const SizedBox(height: 16),
-
-                      // Texto informativo
-                      Text(
-                        '💡 A unidade de medida será carregada automaticamente do produto selecionado',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                          fontStyle: FontStyle.italic,
-                        ),
-                        textAlign: TextAlign.center,
                       ),
-                    ],
-                  ),
+                    ),
+
+                    // TOTAL DA NOTA E SALVAMENTO
+                    Container(
+                      padding: const EdgeInsets.only(top: 12),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          top: BorderSide(color: Colors.grey.shade300),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'TOTAL DA NOTA:',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                _currencyFormat.format(
+                                  _calcularTotalGeralNota(),
+                                ),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
+                                  ),
+                                  child: const Text('Cancelar'),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: _isLoading
+                                      ? null
+                                      : _salvarProcessoGeral,
+                                  icon: const Icon(Icons.save),
+                                  label: Text(
+                                    _isEdicao
+                                        ? 'Confirmar Alteração'
+                                        : 'Gravar Nota',
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
+                                    backgroundColor: Colors.green,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
       ),
     );
   }
 
-  Future<void> _salvarDespesa() async {
+  // ✏️ Modal para corrigir o valor de um item digitado incorretamente (Ex: de 234,00 para 324,00)
+  void _abrirDialogEdicaoItem(ItemDespesaTemporario item, int index) {
+    final qtdEditController = TextEditingController(
+      text: item.quantidade.toString(),
+    );
+    final valEditController = TextEditingController(
+      text: item.valorUnitario.toString(),
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Corrigir item: ${item.produto.nome}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: qtdEditController,
+              decoration: const InputDecoration(labelText: 'Quantidade'),
+              keyboardType: TextInputType.number,
+            ),
+            TextField(
+              controller: valEditController,
+              decoration: const InputDecoration(
+                labelText: 'Valor Unitário (R\$)',
+              ),
+              keyboardType: TextInputType.number,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final novaQtd =
+                  double.tryParse(qtdEditController.text) ?? item.quantidade;
+              final novoVal =
+                  double.tryParse(valEditController.text) ?? item.valorUnitario;
+              setState(() {
+                _itensAdicionados[index].quantidade = novaQtd;
+                _itensAdicionados[index].valorUnitario = novoVal;
+              });
+              Navigator.pop(context);
+            },
+            child: const Text('Atualizar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 💾 Salva todas as despesas da nota (se novo, insere múltiplos. Se edição, altera a existente)
+  Future<void> _salvarProcessoGeral() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_itensAdicionados.isEmpty) {
+      _mostrarMensagem('Adicione pelo menos um item à nota.', isErro: true);
+      return;
+    }
 
     setState(() => _isLoading = true);
 
     try {
-      final quantidade =
-          double.tryParse(_quantidadeController.text.replaceAll(',', '.')) ?? 0;
-
-      final valorUnitario =
-          double.tryParse(
-            _valorUnitarioController.text
-                .replaceAll('R\$ ', '')
-                .replaceAll('.', '')
-                .replaceAll(',', '.'),
-          ) ??
-          0;
-
-      final valorTotal = quantidade * valorUnitario;
-
-      final despesa = Despesa(
-        descricao: _selectedProduto?.nome ?? 'Despesa',
-        fornecedorId: _selectedFornecedor?.id,
-        produtoId: _selectedProduto?.id,
-        unidadeId: _selectedProduto?.unidadeId,
-        orcamentoId: widget.orcamentoId,
-        etapaId: _selectedEtapa?.id,
-        data: _data.toIso8601String(),
-        quantidade: quantidade,
-        valorUnitario: valorUnitario,
-        valorTotal: valorTotal,
-      );
-
-      await _despesaDAO.insert(despesa);
-
-      // 🔧 RECALCULA O PROGRESSO DA ETAPA
-      if (despesa.etapaId != null) {
-        final progresso = await _etapaDAO.calcularProgressoEtapa(
-          despesa.etapaId!,
+      if (_isEdicao && widget.despesaAntiga != null) {
+        // MODO ALTERAÇÃO: Atualiza o registro existente
+        final itemAlterado = _itensAdicionados.first;
+        final despesaAtualizada = Despesa(
+          id: widget.despesaAntiga!.id, // Mantém o ID original
+          descricao: itemAlterado.produto.nome,
+          fornecedorId: _selectedFornecedor?.id,
+          produtoId: itemAlterado.produto.id,
+          unidadeId: itemAlterado.produto.unidadeId,
+          orcamentoId: widget.orcamentoId,
+          etapaId: _selectedEtapa?.id,
+          data: _data.toIso8601String(),
+          quantidade: itemAlterado.quantidade,
+          valorUnitario: itemAlterado.valorUnitario,
+          valorTotal: itemAlterado.valorTotal,
         );
-        
-        // Busca a etapa completa para obter o nome
-        final etapaCompleta = await _etapaDAO.getById(despesa.etapaId!);
-        
-        if (etapaCompleta != null) {
-          final etapaAtualizada = Etapa(
-            id: etapaCompleta.id,
-            nome: etapaCompleta.nome,
-            descricao: etapaCompleta.descricao,
-            orcamentoId: etapaCompleta.orcamentoId,
-            progresso: progresso,
-            status: _calcularStatus(progresso),
-            dataInicio: etapaCompleta.dataInicio,
-            dataFim: etapaCompleta.dataFim,
-            valorOrcado: etapaCompleta.valorOrcado,
+
+        await _despesaDAO.update(despesaAtualizada);
+        await _recalcularProgressoSeNecessario(
+          _selectedEtapa?.id ?? widget.despesaAntiga!.etapaId,
+        );
+        _mostrarMensagem('Lançamento alterado com sucesso!');
+      } else {
+        // MODO LANÇAMENTO MULTIPLO: Varre a lista inserindo cada item como uma despesa associada à nota
+        for (var item in _itensAdicionados) {
+          final despesa = Despesa(
+            descricao: item.produto.nome,
+            fornecedorId: _selectedFornecedor?.id,
+            produtoId: item.produto.id,
+            unidadeId: item.produto.unidadeId,
+            orcamentoId: widget.orcamentoId,
+            etapaId: _selectedEtapa?.id,
+            data: _data.toIso8601String(),
+            quantidade: item.quantidade,
+            valorUnitario: item.valorUnitario,
+            valorTotal: item.valorTotal,
           );
-          await _etapaDAO.update(etapaAtualizada);
+          await _despesaDAO.insert(despesa);
         }
+        await _recalcularProgressoSeNecessario(_selectedEtapa?.id);
+        _mostrarMensagem(
+          'Nota com ${_itensAdicionados.length} itens salva com sucesso!',
+        );
       }
 
-      _mostrarMensagem('Despesa salva com sucesso!');
-
-      if (mounted) {
-        Navigator.pop(context, true);
-      }
+      if (mounted) Navigator.pop(context, true);
     } catch (e) {
       setState(() => _isLoading = false);
-      _mostrarMensagem('Erro ao salvar: $e', isErro: true);
+      _mostrarMensagem('Erro ao salvar despesa(s): $e', isErro: true);
+    }
+  }
+
+  Future<void> _recalcularProgressoSeNecessario(int? etapaId) async {
+    if (etapaId == null) return;
+    final progresso = await _etapaDAO.calcularProgressoEtapa(etapaId);
+    final etapaCompleta = await _etapaDAO.getById(etapaId);
+
+    if (etapaCompleta != null) {
+      final etapaAtualizada = Etapa(
+        id: etapaCompleta.id,
+        nome: etapaCompleta.nome,
+        descricao: etapaCompleta.descricao,
+        orcamentoId: etapaCompleta.orcamentoId,
+        progresso: progresso,
+        status: _calcularStatus(progresso),
+        dataInicio: etapaCompleta.dataInicio,
+        dataFim: etapaCompleta.dataFim,
+        valorOrcado: etapaCompleta.valorOrcado,
+      );
+      await _etapaDAO.update(etapaAtualizada);
     }
   }
 
   @override
   void dispose() {
-    _quantidadeController.removeListener(_calcularTotal);
-    _valorUnitarioController.removeListener(_calcularTotal);
+    _quantidadeController.removeListener(_calcularTotalItemAtual);
+    _valorUnitarioController.removeListener(_calcularTotalItemAtual);
     _quantidadeController.dispose();
     _valorUnitarioController.dispose();
     _valorTotalController.dispose();
