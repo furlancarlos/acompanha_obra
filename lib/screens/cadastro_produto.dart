@@ -102,8 +102,22 @@ class _CadastroProdutoPageState extends State<CadastroProdutoPage> {
       );
 
       if (widget.produto == null) {
-        await _produtoDAO.insert(produto);
+        final idGerado = await _produtoDAO.insert(produto);
+
         _mostrarMensagem('Produto cadastrado com sucesso!');
+
+        final produtoCompleto = Produto(
+          id: idGerado,
+          nome: produto.nome,
+          descricao: produto.descricao,
+          unidadeId: produto.unidadeId,
+          unidade: produto.unidade,
+        );
+
+        if (!mounted) return;
+        Navigator.pop(context, produtoCompleto);
+        return;
+
       } else {
         await _produtoDAO.update(produto);
         _mostrarMensagem('Produto atualizado com sucesso!');
@@ -112,6 +126,8 @@ class _CadastroProdutoPageState extends State<CadastroProdutoPage> {
       if (!mounted) return;
 
       Navigator.pop(context, true);
+      return;
+
     } catch (e) {
       
       if (!mounted) return;

@@ -13,11 +13,11 @@ import '../models/fornecedor.dart';
 import '../models/produto.dart';
 import '../models/etapa.dart';
 
-// importando as telas auxiliares
-//import '../form/lista_fornecedor.dart';
-//import '../form/lista_produto.dart';
+// Importações dos formulários de cadastro rápido (Ajuste os caminhos se necessário)
+import 'cadastro_fornecedor.dart';
+import 'cadastro_produto.dart';
+import 'cadastro_etapa.dart';
 
-// Classe auxiliar para gerenciar os itens adicionados dinamicamente na nota
 class ItemDespesaTemporario {
   Produto produto;
   double quantidade;
@@ -158,6 +158,73 @@ class _CadastroDespesaPageState extends State<CadastroDespesaPage> {
     }
   }
 
+  // ➕ Métodos para inclusão rápida e atualização imediata do Estado
+  Future<void> _cadastrarRapidoFornecedor() async {
+    final novoFornecedor = await Navigator.push<Fornecedor>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const CadastroFornecedorPage(),
+      ), // Ajuste o nome da classe do seu form se necessário
+    );
+
+    if (novoFornecedor != null) {
+      final listaAtualizada = await _fornecedorDAO.getAll();
+      setState(() {
+        _fornecedores = listaAtualizada;
+        _selectedFornecedor = _fornecedores.firstWhere(
+          (f) => f.id == novoFornecedor.id,
+          orElse: () => novoFornecedor,
+        );
+      });
+      _mostrarMensagem('Fornecedor adicionado e selecionado!');
+    }
+  }
+
+  Future<void> _cadastrarRapidoEtapa() async {
+    if (widget.orcamentoId == null) return;
+
+    final novaEtapa = await Navigator.push<Etapa>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CadastroEtapaPage(
+          orcamentoId: widget.orcamentoId!,
+        ), // Ajuste o nome da classe do seu form se necessário
+      ),
+    );
+
+    if (novaEtapa != null) {
+      await _carregarEtapas();
+      setState(() {
+        _selectedEtapa = _etapas.firstWhere(
+          (e) => e.id == novaEtapa.id,
+          orElse: () => novaEtapa,
+        );
+      });
+      _mostrarMensagem('Etapa adicionada e selecionada!');
+    }
+  }
+
+  Future<void> _cadastrarRapidoProduto() async {
+    final novoProduto = await Navigator.push<Produto>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const CadastroProdutoPage(),
+      ), // Ajuste o nome da classe do seu form se necessário
+    );
+
+    if (novoProduto != null) {
+      final listaAtualizada = await _produtoDAO.getAll();
+      setState(() {
+        _produtos = listaAtualizada;
+        _selectedProduto = _produtos.firstWhere(
+          (p) => p.id == novoProduto.id,
+          orElse: () => novoProduto,
+        );
+      });
+      _mostrarMensagem('Produto adicionado e selecionado!');
+    }
+  }
+
   void _calcularTotalItemAtual() {
     final quantidade =
         double.tryParse(_quantidadeController.text.replaceAll(',', '.')) ?? 0;
@@ -178,7 +245,6 @@ class _CadastroDespesaPageState extends State<CadastroDespesaPage> {
     }
   }
 
-  // ➕ Adiciona o item digitado à lista da nota fiscal
   void _adicionarItemNaLista() {
     if (_selectedProduto == null) {
       _mostrarMensagem('Selecione um produto primeiro.', isErro: true);
@@ -213,7 +279,6 @@ class _CadastroDespesaPageState extends State<CadastroDespesaPage> {
         ),
       );
 
-      // Limpa os campos de inserção para o próximo item
       _selectedProduto = null;
       _quantidadeController.clear();
       _valorUnitarioController.clear();
@@ -249,10 +314,13 @@ class _CadastroDespesaPageState extends State<CadastroDespesaPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEdicao ? 'Alterar Despesa' : 'Nova Despesa / Nota'),
+        title: Text(
+          _isEdicao ? 'Alterar Despesa' : 'Nova Despesa / Nota',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+        ),
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
-        elevation: 2,
+        elevation: 4,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -275,46 +343,123 @@ class _CadastroDespesaPageState extends State<CadastroDespesaPage> {
                                 padding: const EdgeInsets.all(12.0),
                                 child: Column(
                                   children: [
-                                    DropdownButtonFormField<Fornecedor>(
-                                      decoration: const InputDecoration(
-                                        labelText: 'Fornecedor',
-                                        prefixIcon: Icon(Icons.business),
-                                        border: OutlineInputBorder(),
-                                      ),
-                                      initialValue: _selectedFornecedor,
-                                      isExpanded: true,
-                                      items: _fornecedores.map((f) {
-                                        return DropdownMenuItem<Fornecedor>(
-                                          value: f,
-                                          child: Text(f.nome),
-                                        );
-                                      }).toList(),
-                                      onChanged: (val) => setState(
-                                        () => _selectedFornecedor = val,
-                                      ),
-                                      validator: (v) => v == null
-                                          ? 'Selecione o fornecedor'
-                                          : null,
+                                    // 🟢 ROW DO FORNECEDOR COM O BOTÃO +
+                                    Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        Expanded(
+                                          child:
+                                              DropdownButtonFormField<
+                                                Fornecedor
+                                              >(
+                                                decoration: InputDecoration(
+                                                  labelText: 'Fornecedor',
+                                                  prefixIcon: Icon(
+                                                    Icons.business,
+                                                    size: 20,
+                                                  ),
+                                                  border: OutlineInputBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          14,
+                                                        ),
+                                                  ),
+                                                ),
+                                                initialValue:
+                                                    _selectedFornecedor,
+                                                isExpanded: true,
+                                                items: _fornecedores.map((f) {
+                                                  return DropdownMenuItem<
+                                                    Fornecedor
+                                                  >(
+                                                    value: f,
+                                                    child: Text(f.nome),
+                                                  );
+                                                }).toList(),
+                                                onChanged: (val) => setState(
+                                                  () =>
+                                                      _selectedFornecedor = val,
+                                                ),
+                                                validator: (v) => v == null
+                                                    ? 'Selecione o fornecedor'
+                                                    : null,
+                                              ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Container(
+                                          width: 20,
+                                          height: 40,
+                                          alignment: Alignment.topCenter,
+                                          child: IconButton(
+                                            icon: const Icon(
+                                              Icons.add_circle,
+                                              color: Colors.green,
+                                              size: 20,
+                                            ),
+                                            onPressed:
+                                                _cadastrarRapidoFornecedor,
+                                            tooltip: 'Cadastrar Fornecedor',
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                     const SizedBox(height: 12),
+
+                                    // 🟢 ROW DA ETAPA COM O BOTÃO +
                                     if (widget.orcamentoId != null) ...[
-                                      DropdownButtonFormField<Etapa>(
-                                        decoration: const InputDecoration(
-                                          labelText: 'Etapa (opcional)',
-                                          prefixIcon: Icon(Icons.timeline),
-                                          border: OutlineInputBorder(),
-                                        ),
-                                        initialValue: _selectedEtapa,
-                                        isExpanded: true,
-                                        items: _etapas.map((e) {
-                                          return DropdownMenuItem<Etapa>(
-                                            value: e,
-                                            child: Text(e.nome),
-                                          );
-                                        }).toList(),
-                                        onChanged: (val) => setState(
-                                          () => _selectedEtapa = val,
-                                        ),
+                                      Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: [
+                                          Expanded(
+                                            child:
+                                                DropdownButtonFormField<Etapa>(
+                                                  decoration: InputDecoration(
+                                                    labelText:
+                                                        'Etapa (opcional)',
+                                                    prefixIcon: Icon(
+                                                      Icons.timeline,
+                                                      size: 20,
+                                                    ),
+                                                    border: OutlineInputBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            14,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                  initialValue: _selectedEtapa,
+                                                  isExpanded: true,
+                                                  items: _etapas.map((e) {
+                                                    return DropdownMenuItem<
+                                                      Etapa
+                                                    >(
+                                                      value: e,
+                                                      child: Text(e.nome),
+                                                    );
+                                                  }).toList(),
+                                                  onChanged: (val) => setState(
+                                                    () => _selectedEtapa = val,
+                                                  ),
+                                                ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Container(
+                                            width: 20,
+                                            height: 40,
+                                            alignment: Alignment.topCenter,
+                                            child: IconButton(
+                                              icon: const Icon(
+                                                Icons.add_circle,
+                                                color: Colors.green,
+                                                size: 20,
+                                              ),
+                                              onPressed: _cadastrarRapidoEtapa,
+                                              tooltip: 'Cadastrar Etapa',
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                       const SizedBox(height: 12),
                                     ],
@@ -337,8 +482,9 @@ class _CadastroDespesaPageState extends State<CadastroDespesaPage> {
                                               firstDate: DateTime(2000),
                                               lastDate: DateTime(2100),
                                             );
-                                            if (picked != null)
+                                            if (picked != null) {
                                               setState(() => _data = picked);
+                                            }
                                           },
                                           child: const Text('Alterar Data'),
                                         ),
@@ -350,70 +496,168 @@ class _CadastroDespesaPageState extends State<CadastroDespesaPage> {
                             ),
                             const SizedBox(height: 10),
 
-                            // 2. INCLUSÃO DE ITENS (SÓ BLOQUEIA SE FOR EDIÇÃO DE UM ITEM FIXO JÁ EXISTENTE)
+                            // 2. INCLUSÃO DE ITENS
                             if (!_isEdicao) ...[
                               Card(
-                                color: Colors.blue.shade50,
-                                elevation: 3,
+                                // Material 3 prioriza superfícies suaves em vez de sombras pesadas
+                                color: Colors.blue.shade50.withValues(
+                                  alpha: 0.6,
+                                ),
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  side: BorderSide(
+                                    color: Colors.blue.shade100,
+                                    width: 1.5,
+                                  ),
+                                ),
                                 child: Padding(
-                                  padding: const EdgeInsets.all(12.0),
+                                  padding: const EdgeInsets.all(
+                                    16.0,
+                                  ), // Espaçamento interno mais generoso
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.stretch,
                                     children: [
-                                      const Text(
-                                        'Adicionar Item à Nota',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 15,
-                                        ),
+                                      // Título estilizado com Ícone
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.add_shopping_cart,
+                                            color: Colors.blue.shade800,
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            'Adicionar Item à Nota',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                              color: Colors.blue.shade900,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      const SizedBox(height: 8),
-                                      DropdownButtonFormField<Produto>(
-                                        decoration: const InputDecoration(
-                                          labelText: 'Produto',
-                                          border: OutlineInputBorder(),
-                                          fillColor: Colors.white,
-                                          filled: true,
-                                        ),
-                                        initialValue: _selectedProduto,
-                                        isExpanded: true,
-                                        items: _produtos.map((p) {
-                                          return DropdownMenuItem<Produto>(
-                                            value: p,
-                                            child: Text(p.nome),
-                                          );
-                                        }).toList(),
-                                        onChanged: (val) => setState(
-                                          () => _selectedProduto = val,
-                                        ),
+                                      const SizedBox(height: 16),
+
+                                      // 🟢 ROW DO PRODUTO COM O BOTÃO +
+                                      Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: [
+                                          Expanded(
+                                            child: DropdownButtonFormField<Produto>(
+                                              decoration: InputDecoration(
+                                                labelText: 'Produto',
+                                                labelStyle: TextStyle(
+                                                  color: Colors.blue.shade900,
+                                                ),
+                                                border: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                                enabledBorder:
+                                                    OutlineInputBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            12,
+                                                          ),
+                                                      borderSide: BorderSide(
+                                                        color: Colors
+                                                            .grey
+                                                            .shade400,
+                                                      ),
+                                                    ),
+                                                focusedBorder:
+                                                    OutlineInputBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            12,
+                                                          ),
+                                                      borderSide: BorderSide(
+                                                        color: Colors
+                                                            .blue
+                                                            .shade700,
+                                                        width: 2,
+                                                      ),
+                                                    ),
+                                                fillColor: Colors.white,
+                                                filled: true,
+                                                isDense: true,
+                                              ),
+                                              initialValue: _selectedProduto,
+                                              isExpanded: true,
+                                              items: _produtos.map((p) {
+                                                return DropdownMenuItem<
+                                                  Produto
+                                                >(
+                                                  value: p,
+                                                  child: Text(p.nome),
+                                                );
+                                              }).toList(),
+                                              onChanged: (val) => setState(
+                                                () => _selectedProduto = val,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          // Botão de adicionar transformado em um container circular suave
+                                          Container(
+                                            width: 20,
+                                            height: 40,
+                                            alignment: Alignment.topCenter,
+                                            child: IconButton(
+                                              icon: const Icon(
+                                                Icons.add_circle,
+                                                color: Colors.green,
+                                                size: 20,
+                                              ),
+                                              onPressed:
+                                                  _cadastrarRapidoProduto,
+                                              tooltip: 'Cadastrar Produto',
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      const SizedBox(height: 8),
+                                      const SizedBox(height: 12),
+
+                                      // Campos de Qtd e Valor
                                       Row(
                                         children: [
                                           Expanded(
+                                            flex:
+                                                2, // Qtd ligeiramente menor na proporção
                                             child: TextFormField(
                                               controller: _quantidadeController,
-                                              decoration: const InputDecoration(
+                                              decoration: InputDecoration(
                                                 labelText: 'Qtd',
-                                                border: OutlineInputBorder(),
+                                                border: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
                                                 filled: true,
                                                 fillColor: Colors.white,
+                                                isDense: true,
                                               ),
                                               keyboardType:
                                                   TextInputType.number,
                                             ),
                                           ),
-                                          const SizedBox(width: 8),
+                                          const SizedBox(width: 12),
                                           Expanded(
+                                            flex: 3,
                                             child: TextFormField(
                                               controller:
                                                   _valorUnitarioController,
-                                              decoration: const InputDecoration(
+                                              decoration: InputDecoration(
                                                 labelText: 'V. Unit (R\$)',
-                                                border: OutlineInputBorder(),
+                                                border: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
                                                 filled: true,
                                                 fillColor: Colors.white,
+                                                isDense: true,
                                               ),
                                               keyboardType:
                                                   const TextInputType.numberWithOptions(
@@ -423,16 +667,31 @@ class _CadastroDespesaPageState extends State<CadastroDespesaPage> {
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 8),
+                                      const SizedBox(height: 16),
+
+                                      // Botão principal de inserção expandido e moderno
                                       ElevatedButton.icon(
                                         onPressed: _adicionarItemNaLista,
-                                        icon: const Icon(Icons.add),
+                                        icon: const Icon(Icons.playlist_add),
                                         label: const Text(
                                           'Inserir Item na Nota',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 15,
+                                          ),
                                         ),
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: Colors.blue.shade700,
                                           foregroundColor: Colors.white,
+                                          elevation: 0,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 14,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -441,7 +700,7 @@ class _CadastroDespesaPageState extends State<CadastroDespesaPage> {
                               ),
                             ],
 
-                            // 3. SEÇÃO DOS ITENS ADICIONADOS / EM EDIÇÃO
+                            // 3. SEÇÃO DOS ITENS ADICIONADOS
                             const Padding(
                               padding: EdgeInsets.symmetric(vertical: 8.0),
                               child: Text(
@@ -588,7 +847,6 @@ class _CadastroDespesaPageState extends State<CadastroDespesaPage> {
     );
   }
 
-  // ✏️ Modal para corrigir o valor de um item digitado incorretamente (Ex: de 234,00 para 324,00)
   void _abrirDialogEdicaoItem(ItemDespesaTemporario item, int index) {
     final qtdEditController = TextEditingController(
       text: item.quantidade.toString(),
@@ -642,7 +900,6 @@ class _CadastroDespesaPageState extends State<CadastroDespesaPage> {
     );
   }
 
-  // 💾 Salva todas as despesas da nota (se novo, insere múltiplos. Se edição, altera a existente)
   Future<void> _salvarProcessoGeral() async {
     if (!_formKey.currentState!.validate()) return;
     if (_itensAdicionados.isEmpty) {
@@ -654,10 +911,9 @@ class _CadastroDespesaPageState extends State<CadastroDespesaPage> {
 
     try {
       if (_isEdicao && widget.despesaAntiga != null) {
-        // MODO ALTERAÇÃO: Atualiza o registro existente
         final itemAlterado = _itensAdicionados.first;
         final despesaAtualizada = Despesa(
-          id: widget.despesaAntiga!.id, // Mantém o ID original
+          id: widget.despesaAntiga!.id,
           descricao: itemAlterado.produto.nome,
           fornecedorId: _selectedFornecedor?.id,
           produtoId: itemAlterado.produto.id,
@@ -676,7 +932,6 @@ class _CadastroDespesaPageState extends State<CadastroDespesaPage> {
         );
         _mostrarMensagem('Lançamento alterado com sucesso!');
       } else {
-        // MODO LANÇAMENTO MULTIPLO: Varre a lista inserindo cada item como uma despesa associada à nota
         for (var item in _itensAdicionados) {
           final despesa = Despesa(
             descricao: item.produto.nome,

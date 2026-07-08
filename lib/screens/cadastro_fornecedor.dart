@@ -20,7 +20,7 @@ class _CadastroFornecedorPageState extends State<CadastroFornecedorPage> {
   final _enderecoController = TextEditingController();
   final _telefoneController = TextEditingController();
   final _contatoController = TextEditingController();
-  
+
   bool _isLoading = false;
   final _fornecedorDAO = FornecedorDAO();
 
@@ -49,15 +49,21 @@ class _CadastroFornecedorPageState extends State<CadastroFornecedorPage> {
   }
 
   Future<void> _salvar() async {
+    // 1. Bloqueio de segurança imediato
+    if (_isLoading) return;
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
     try {
-      // Verifica se já existe um fornecedor com o mesmo nome
-      final existe = await _fornecedorDAO.existsByNome(_nomeController.text.trim());
+      final existe = await _fornecedorDAO.existsByNome(
+        _nomeController.text.trim(),
+      );
       if (existe && widget.fornecedor == null) {
-        _mostrarMensagem('Já existe um fornecedor com este nome!', isErro: true);
+        _mostrarMensagem(
+          'Já existe um fornecedor com este nome!',
+          isErro: true,
+        );
         setState(() => _isLoading = false);
         return;
       }
@@ -65,32 +71,45 @@ class _CadastroFornecedorPageState extends State<CadastroFornecedorPage> {
       final fornecedor = Fornecedor(
         id: widget.fornecedor?.id,
         nome: _nomeController.text.trim(),
-        endereco: _enderecoController.text.trim().isEmpty 
-            ? null 
+        endereco: _enderecoController.text.trim().isEmpty
+            ? null
             : _enderecoController.text.trim(),
-        telefone: _telefoneController.text.trim().isEmpty 
-            ? null 
+        telefone: _telefoneController.text.trim().isEmpty
+            ? null
             : _telefoneController.text.trim(),
-        contato: _contatoController.text.trim().isEmpty 
-            ? null 
+        contato: _contatoController.text.trim().isEmpty
+            ? null
             : _contatoController.text.trim(),
       );
 
       if (widget.fornecedor == null) {
-        await _fornecedorDAO.insert(fornecedor);
+        final idGerado = await _fornecedorDAO.insert(fornecedor);
+
         _mostrarMensagem('Fornecedor cadastrado com sucesso!');
+
+        final fornecedorCompleto = Fornecedor(
+          id: idGerado,
+          nome: fornecedor.nome,
+          endereco: fornecedor.endereco,
+          telefone: fornecedor.telefone,
+          contato: fornecedor.contato,
+        );
+
+        if (!mounted) return;
+        Navigator.pop(context, fornecedorCompleto);
+        return;
       } else {
         await _fornecedorDAO.update(fornecedor);
         _mostrarMensagem('Fornecedor atualizado com sucesso!');
+
+        // Verifica se a tela ainda está na árvore antes de mandar fechar
+        if (!mounted) return;
+
+        Navigator.pop(context, true);
+        return;
       }
-
-      if (!mounted) return;
-
-      Navigator.pop(context, true);
     } catch (e) {
-      
       if (!mounted) return;
-
       _mostrarMensagem('Erro ao salvar: $e', isErro: true);
       setState(() => _isLoading = false);
     }
@@ -157,9 +176,9 @@ class _CadastroFornecedorPageState extends State<CadastroFornecedorPage> {
                             return null;
                           },
                           textCapitalization: TextCapitalization.words,
-                          onFieldSubmitted: (_) => _salvar(),
+                          //  onFieldSubmitted: (_) => _salvar(),
                         ),
-                        
+
                         const SizedBox(height: 16),
 
                         // Campo: Endereço (opcional)
@@ -173,9 +192,9 @@ class _CadastroFornecedorPageState extends State<CadastroFornecedorPage> {
                           ),
                           maxLines: 2,
                           textCapitalization: TextCapitalization.words,
-                          onFieldSubmitted: (_) => _salvar(),
+                          //  onFieldSubmitted: (_) => _salvar(),
                         ),
-                        
+
                         const SizedBox(height: 16),
 
                         // Campo: Telefone (opcional)
@@ -188,9 +207,9 @@ class _CadastroFornecedorPageState extends State<CadastroFornecedorPage> {
                             border: OutlineInputBorder(),
                           ),
                           keyboardType: TextInputType.phone,
-                          onFieldSubmitted: (_) => _salvar(),
+                          //  onFieldSubmitted: (_) => _salvar(),
                         ),
-                        
+
                         const SizedBox(height: 16),
 
                         // Campo: Contato (opcional)
@@ -203,7 +222,7 @@ class _CadastroFornecedorPageState extends State<CadastroFornecedorPage> {
                             border: OutlineInputBorder(),
                           ),
                           textCapitalization: TextCapitalization.words,
-                          onFieldSubmitted: (_) => _salvar(),
+                          //  onFieldSubmitted: (_) => _salvar(),
                         ),
                       ],
                     ),
@@ -232,7 +251,9 @@ class _CadastroFornecedorPageState extends State<CadastroFornecedorPage> {
                       // Botão Salvar
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: _salvar,
+                          // Se _isLoading for verdadeiro, passa null (desabilita o botão),
+                          // caso contrário, passa a função _salvar
+                          onPressed: _isLoading ? null : _salvar,
                           icon: Icon(isEditando ? Icons.edit : Icons.save),
                           label: Text(isEditando ? 'Atualizar' : 'Salvar'),
                           style: ElevatedButton.styleFrom(
@@ -246,18 +267,16 @@ class _CadastroFornecedorPageState extends State<CadastroFornecedorPage> {
                   ),
                 ] else ...[
                   // Indicador de carregamento
-                  const Center(
-                    child: CircularProgressIndicator(),
-                  ),
+                  const Center(child: CircularProgressIndicator()),
                 ],
 
                 const SizedBox(height: 16),
 
                 // Texto informativo
                 Text(
-                  isEditando 
-                    ? '🔄 Editando fornecedor existente' 
-                    : '💡 Cadastre um novo fornecedor',
+                  isEditando
+                      ? '🔄 Editando fornecedor existente'
+                      : '💡 Cadastre um novo fornecedor',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey.shade600,

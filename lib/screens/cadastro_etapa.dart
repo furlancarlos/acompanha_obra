@@ -175,12 +175,29 @@ class _CadastroEtapaPageState extends State<CadastroEtapaPage> {
         status: _selectedStatus,
         dataInicio: _dataInicio?.toIso8601String().split('T').first,
         dataFim: _dataFim?.toIso8601String().split('T').first,
-        valorOrcado: valorOrcado,  // ← USANDO A VARIÁVEL
+        valorOrcado: valorOrcado,
       );
 
       if (widget.etapa == null) {
-        await _etapaDAO.insert(etapa);
+        final idGerado = await _etapaDAO.insert(etapa);
+
         _mostrarMensagem('Etapa cadastrada com sucesso!');
+
+        final etapaCompleto = Etapa(
+          id: idGerado,
+          nome: etapa.nome,
+          descricao: etapa.descricao,
+          orcamentoId: etapa.orcamentoId,
+          progresso: etapa.progresso,
+          status: etapa.status,
+          dataInicio: etapa.dataInicio,
+          dataFim: etapa.dataFim,
+          valorOrcado: etapa.valorOrcado,
+        );
+
+        if (!mounted) return;
+        Navigator.pop(context, etapaCompleto);
+        return;
       } else {
         await _etapaDAO.update(etapa);
         _mostrarMensagem('Etapa atualizada com sucesso!');

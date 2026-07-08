@@ -2,7 +2,9 @@
 // Arquivo de definição da classe principal do aplicativo.
 // Para iniciar o aplicativo, execute o comando flutter run.
 // Pasta de trabalho: C:\projetos\Flutter\acompanha_obra
-// TELA PRINCIPAL - DASHBOARD (VERSÃO COMPONENTIZADA)
+// Como gerar o apk para envio do arquivo para um dispositivo android, e enviar via gmail, por exemplo:
+// flutter build apk --release
+// TELA PRINCIPAL - DASHBOARD
 //============================================================================//
 
 import 'package:acompanha_obra/screens/cadastro_despesa.dart';
@@ -10,7 +12,7 @@ import 'package:acompanha_obra/form/lista_orcamento.dart';
 import 'package:acompanha_obra/widgets/cards/card_grafico_etapas.dart';
 import 'package:acompanha_obra/widgets/cards/card_resumo_orcamento.dart';
 import 'package:acompanha_obra/widgets/cards/card_lista_orcamentos.dart';
-// 🔧 IMPORTA A NOVA TELA DE CONFIGURAÇÕES EM ABAS
+
 import 'package:acompanha_obra/screens/configuracoes_page.dart'; 
 import 'package:flutter/material.dart';
 import 'dao/despesa_dao.dart';
@@ -308,7 +310,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // 🔧 FUNÇÃO ATUALIZADA REPASANDO O ORÇAMENTO SELECIONADO À NOVA TELA
+  // Função para abrir a tela de configurações
   void _abrirConfiguracoes() async {
     await Navigator.push(
       context,
@@ -318,7 +320,6 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
-    // Ao voltar das configurações (caso algo mude ou backup seja feito), recarrega
     _carregarDados();
   }
 }
