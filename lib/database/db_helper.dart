@@ -26,7 +26,7 @@ class DBHelper {
 
     return await openDatabase(
       path,
-      version: 5,
+      version: 6,
       onConfigure: _onConfigure,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
@@ -116,6 +116,7 @@ class DBHelper {
         quantidade REAL NOT NULL,
         valor_unitario REAL NOT NULL,
         valor_total REAL NOT NULL,
+        numero_nota TEXT,
         FOREIGN KEY (fornecedor_id) REFERENCES fornecedor (id) ON DELETE SET NULL,
         FOREIGN KEY (produto_id) REFERENCES produto (id) ON DELETE SET NULL,
         FOREIGN KEY (unidade_id) REFERENCES unidade (id) ON DELETE SET NULL,
@@ -137,6 +138,7 @@ class DBHelper {
     await db.execute('CREATE INDEX idx_etapa_orcamento ON etapa(orcamento_id)');
     await db.execute('CREATE INDEX idx_etapa_status ON etapa(status)');
     await db.execute('CREATE INDEX idx_despesa_data ON despesa(data)');
+    await db.execute('CREATE INDEX idx_despesa_numero_nota ON despesa(numero_nota)');
     await db.execute(
       'CREATE INDEX idx_orcamento_datas ON orcamento(data_inicio, data_fim)',
     );
@@ -198,6 +200,25 @@ class DBHelper {
       } catch (e, stackTrace) {
         developer.log(
           'Erro ao adicionar valor_orcado',
+          name: 'DB_UPGRADE',
+          error: e,
+          stackTrace: stackTrace,
+        );
+      }
+    }
+
+    // Versão 5 → 6: Adiciona numero_nota na tabela despesa
+    if (oldVersion < 6) {
+      try {
+        await db.execute('ALTER TABLE despesa ADD COLUMN numero_nota TEXT');
+        await db.execute('CREATE INDEX idx_despesa_numero_nota ON despesa(numero_nota)');
+        developer.log(
+          'Coluna numero_nota adicionada à tabela despesa',
+          name: 'DB_UPGRADE',
+        );
+      } catch (e, stackTrace) {
+        developer.log(
+          'Erro ao adicionar numero_nota',
           name: 'DB_UPGRADE',
           error: e,
           stackTrace: stackTrace,

@@ -14,6 +14,7 @@ class Despesa {
   double quantidade;
   double valorUnitario;
   double valorTotal;
+  String? numeroNota;
 
   Despesa({
     this.id,
@@ -27,6 +28,7 @@ class Despesa {
     required this.quantidade,
     required this.valorUnitario,
     required this.valorTotal,
+    this.numeroNota,
   });
 
   Map<String, dynamic> toMap() {
@@ -42,6 +44,7 @@ class Despesa {
       'quantidade': quantidade,
       'valor_unitario': valorUnitario,
       'valor_total': valorTotal,
+      'numero_nota': numeroNota,
     };
   }
 
@@ -58,6 +61,7 @@ class Despesa {
       quantidade: (map['quantidade'] as num).toDouble(),
       valorUnitario: (map['valor_unitario'] as num).toDouble(),
       valorTotal: (map['valor_total'] as num).toDouble(),
+      numeroNota: map['numero_nota'],
     );
   }
 }

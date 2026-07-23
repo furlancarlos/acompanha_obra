@@ -69,6 +69,7 @@ class _CadastroDespesaPageState extends State<CadastroDespesaPage> {
   final _quantidadeController = TextEditingController();
   final _valorUnitarioController = TextEditingController();
   final _valorTotalController = TextEditingController();
+  final _numeroNotaController = TextEditingController();
 
   DateTime _data = DateTime.now();
   bool _isLoading = false;
@@ -109,6 +110,10 @@ class _CadastroDespesaPageState extends State<CadastroDespesaPage> {
         // Se for EDIÇÃO, popula os campos com os dados antigos
         if (_isEdicao && widget.despesaAntiga != null) {
           final antiga = widget.despesaAntiga!;
+
+          // Atribuição do número da nota no controller:
+          _numeroNotaController.text = antiga.numeroNota ?? '';
+        
           _data = DateTime.tryParse(antiga.data) ?? DateTime.now();
 
           try {
@@ -345,47 +350,37 @@ class _CadastroDespesaPageState extends State<CadastroDespesaPage> {
                                   children: [
                                     // 🟢 ROW DO FORNECEDOR COM O BOTÃO +
                                     Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
+                                      crossAxisAlignment: CrossAxisAlignment.center,
                                       children: [
                                         Expanded(
-                                          child:
-                                              DropdownButtonFormField<
-                                                Fornecedor
-                                              >(
-                                                decoration: InputDecoration(
-                                                  labelText: 'Fornecedor',
-                                                  prefixIcon: Icon(
-                                                    Icons.business,
-                                                    size: 20,
-                                                  ),
-                                                  border: OutlineInputBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          14,
-                                                        ),
-                                                  ),
-                                                ),
-                                                initialValue:
-                                                    _selectedFornecedor,
-                                                isExpanded: true,
-                                                items: _fornecedores.map((f) {
-                                                  return DropdownMenuItem<
-                                                    Fornecedor
-                                                  >(
-                                                    value: f,
-                                                    child: Text(f.nome),
-                                                  );
-                                                }).toList(),
-                                                onChanged: (val) => setState(
-                                                  () =>
-                                                      _selectedFornecedor = val,
-                                                ),
-                                                validator: (v) => v == null
-                                                    ? 'Selecione o fornecedor'
-                                                    : null,
+                                          child: DropdownButtonFormField<Fornecedor>(
+                                            decoration: InputDecoration(
+                                              labelText: 'Fornecedor',
+                                              prefixIcon: const Icon(
+                                                Icons.business,
+                                                size: 20,
                                               ),
+                                              border: OutlineInputBorder(
+                                                borderRadius: BorderRadius.circular(14),
+                                              ),
+                                            ),
+                                            initialValue: _selectedFornecedor,
+                                            isExpanded: true,
+                                            items: _fornecedores.map((f) {
+                                              return DropdownMenuItem<Fornecedor>(
+                                                value: f,
+                                                child: Text(f.nome),
+                                              );
+                                            }).toList(),
+                                            onChanged: (val) => setState(
+                                              () => _selectedFornecedor = val,
+                                            ),
+                                            validator: (v) => v == null
+                                              ? 'Selecione o fornecedor'
+                                              : null,
+                                          ),
                                         ),
+
                                         const SizedBox(width: 4),
                                         Container(
                                           width: 20,
@@ -397,12 +392,26 @@ class _CadastroDespesaPageState extends State<CadastroDespesaPage> {
                                               color: Colors.green,
                                               size: 20,
                                             ),
-                                            onPressed:
-                                                _cadastrarRapidoFornecedor,
+                                            onPressed: _cadastrarRapidoFornecedor,
                                             tooltip: 'Cadastrar Fornecedor',
                                           ),
                                         ),
                                       ],
+                                    ),
+                                    const SizedBox(height: 12),
+
+                                    // 🟢 CAMPO DO NÚMERO DA NOTA FISCAL / RECIBO (NOVO)
+                                    TextFormField(
+                                      controller: _numeroNotaController,
+                                      decoration: InputDecoration(
+                                        labelText: 'Número da Nota Fiscal / Recibo',
+                                        hintText: 'Ex: NF-1024 ou 001',
+                                        prefixIcon: const Icon(Icons.receipt_long, size: 20),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(14),
+                                        ),
+                                      ),
+                                      textInputAction: TextInputAction.next,
                                     ),
                                     const SizedBox(height: 12),
 
@@ -910,6 +919,9 @@ class _CadastroDespesaPageState extends State<CadastroDespesaPage> {
     setState(() => _isLoading = true);
 
     try {
+      final textoNota = _numeroNotaController.text.trim();
+      final numeroNotaTratado = textoNota.isEmpty ? null : textoNota;
+
       if (_isEdicao && widget.despesaAntiga != null) {
         final itemAlterado = _itensAdicionados.first;
         final despesaAtualizada = Despesa(
@@ -924,6 +936,7 @@ class _CadastroDespesaPageState extends State<CadastroDespesaPage> {
           quantidade: itemAlterado.quantidade,
           valorUnitario: itemAlterado.valorUnitario,
           valorTotal: itemAlterado.valorTotal,
+          numeroNota: numeroNotaTratado,
         );
 
         await _despesaDAO.update(despesaAtualizada);
@@ -944,6 +957,7 @@ class _CadastroDespesaPageState extends State<CadastroDespesaPage> {
             quantidade: item.quantidade,
             valorUnitario: item.valorUnitario,
             valorTotal: item.valorTotal,
+            numeroNota: numeroNotaTratado,
           );
           await _despesaDAO.insert(despesa);
         }
@@ -988,6 +1002,7 @@ class _CadastroDespesaPageState extends State<CadastroDespesaPage> {
     _quantidadeController.dispose();
     _valorUnitarioController.dispose();
     _valorTotalController.dispose();
+    _numeroNotaController.dispose();
     super.dispose();
   }
 }
