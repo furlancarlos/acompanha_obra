@@ -4,6 +4,7 @@
 // Pasta de trabalho: C:\projetos\Flutter\acompanha_obra
 // Como gerar o apk para envio do arquivo para um dispositivo android, e enviar via gmail, por exemplo:
 // flutter build apk --release
+// O apk será salvo na pasta build/app/outputs/apk/release/
 // TELA PRINCIPAL - DASHBOARD
 //============================================================================//
 
