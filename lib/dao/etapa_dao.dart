@@ -31,7 +31,7 @@ class EtapaDAO {
 
   Future<List<Etapa>> getAll() async {
     final db = await _dbHelper.db;
-    final result = await db.query('etapa', orderBy: 'nome');
+    final result = await db.query('etapa', orderBy: 'progresso ASC, id ASC');
     return result.map((map) => Etapa.fromMap(map)).toList();
   }
 
@@ -41,7 +41,7 @@ class EtapaDAO {
       'etapa',
       where: 'orcamento_id = ?',
       whereArgs: [orcamentoId],
-      orderBy: 'id',
+      orderBy: 'progresso ASC, id ASC',
     );
     return result.map((map) => Etapa.fromMap(map)).toList();
   }
@@ -164,8 +164,9 @@ class EtapaDAO {
   String _calcularStatus(double progresso) {
     if (progresso >= 1.0) return 'Concluído';
     if (progresso >= 0.7) return 'Em Andamento';
-    if (progresso >= 0.3) return 'Em Andamento';
-    if (progresso > 0) return 'Iniciado';
+    if (progresso >= 0.1) return 'Em Andamento';
+    if (progresso >= 0.06) return 'Iniciado';
+    if (progresso > 0) return 'Planejado';
     return 'Pendente';
   }
 }

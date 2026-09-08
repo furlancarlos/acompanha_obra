@@ -1,11 +1,14 @@
 // form/lista_etapa.dart
 // Arquivo de definição da tela de listagem de etapas.
 // Seu acionamento é feito pelo botão "Ver Todos" no card de orçamento.
+// Após clicar em "Ver Todos", clicar em "Etapas" na tela de orçamento
+// exibe a tela de listagem de etapas.
 //============================================================================//
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../dao/etapa_dao.dart';
+import '../dao/despesa_dao.dart';
 import '../models/etapa.dart';
 import '../screens/cadastro_etapa.dart';
 
@@ -21,6 +24,7 @@ class _ListaEtapaPageState extends State<ListaEtapaPage> {
   List<Etapa> _etapas = [];
   bool _isLoading = true;
   final _etapaDAO = EtapaDAO();
+  final _despesaDAO = DespesaDAO();
 
   final _dateFormat = DateFormat('dd/MM/yyyy');
   final _currencyFormat = NumberFormat.currency(
@@ -114,8 +118,8 @@ class _ListaEtapaPageState extends State<ListaEtapaPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.orcamentoId != null 
-              ? 'Etapas do Orçamento' 
+          widget.orcamentoId != null
+              ? 'Etapas do Orçamento'
               : 'Todas as Etapas',
         ),
         backgroundColor: const Color(0xFF1B3A5C),
@@ -132,24 +136,23 @@ class _ListaEtapaPageState extends State<ListaEtapaPage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _etapas.isEmpty
-              ? _buildEmptyState()
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _etapas.length,
-                  itemBuilder: (context, index) {
-                    final etapa = _etapas[index];
-                    return _buildEtapaCard(etapa);
-                  },
-                ),
+          ? _buildEmptyState()
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: _etapas.length,
+              itemBuilder: (context, index) {
+                final etapa = _etapas[index];
+                return _buildEtapaCard(etapa);
+              },
+            ),
       floatingActionButton: widget.orcamentoId != null
           ? FloatingActionButton(
               onPressed: () async {
                 final resultado = await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => CadastroEtapaPage(
-                      orcamentoId: widget.orcamentoId,
-                    ),
+                    builder: (_) =>
+                        CadastroEtapaPage(orcamentoId: widget.orcamentoId),
                   ),
                 );
                 if (resultado == true) {
@@ -169,11 +172,7 @@ class _ListaEtapaPageState extends State<ListaEtapaPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.task_outlined,
-            size: 80,
-            color: Colors.grey.shade400,
-          ),
+          Icon(Icons.task_outlined, size: 80, color: Colors.grey.shade400),
           const SizedBox(height: 16),
           Text(
             'Nenhuma etapa cadastrada',
@@ -188,10 +187,7 @@ class _ListaEtapaPageState extends State<ListaEtapaPage> {
             widget.orcamentoId != null
                 ? 'Clique no botão + para adicionar'
                 : 'Selecione um orçamento para gerenciar suas etapas',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade500,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
           ),
         ],
       ),
@@ -205,9 +201,7 @@ class _ListaEtapaPageState extends State<ListaEtapaPage> {
     return Card(
       elevation: 3,
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -260,9 +254,10 @@ class _ListaEtapaPageState extends State<ListaEtapaPage> {
                           ),
                         ],
                       ),
-                      
+
                       // ← DESCRIÇÃO
-                      if (etapa.descricao != null && etapa.descricao!.isNotEmpty)
+                      if (etapa.descricao != null &&
+                          etapa.descricao!.isNotEmpty)
                         Text(
                           etapa.descricao!,
                           style: TextStyle(
@@ -272,7 +267,7 @@ class _ListaEtapaPageState extends State<ListaEtapaPage> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                      
+
                       // ← DATAS
                       Row(
                         children: [
@@ -284,7 +279,9 @@ class _ListaEtapaPageState extends State<ListaEtapaPage> {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              _dateFormat.format(DateTime.parse(etapa.dataInicio!)),
+                              _dateFormat.format(
+                                DateTime.parse(etapa.dataInicio!),
+                              ),
                               style: TextStyle(
                                 fontSize: 13,
                                 color: Colors.grey.shade600,
@@ -300,7 +297,9 @@ class _ListaEtapaPageState extends State<ListaEtapaPage> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              _dateFormat.format(DateTime.parse(etapa.dataFim!)),
+                              _dateFormat.format(
+                                DateTime.parse(etapa.dataFim!),
+                              ),
                               style: TextStyle(
                                 fontSize: 13,
                                 color: Colors.grey.shade600,
@@ -323,9 +322,9 @@ class _ListaEtapaPageState extends State<ListaEtapaPage> {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 8),
-            
+
             // ← BARRA DE PROGRESSO + VALOR ORÇADO
             Row(
               children: [
@@ -333,11 +332,14 @@ class _ListaEtapaPageState extends State<ListaEtapaPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        alignment: WrapAlignment.spaceBetween,
                         children: [
                           // ← PROGRESSO
-                          Row(
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 'Progresso',
@@ -346,19 +348,48 @@ class _ListaEtapaPageState extends State<ListaEtapaPage> {
                                   color: Colors.grey.shade600,
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                '${(progresso * 100).toInt()}%',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: statusColor,
+                              const SizedBox(height: 2),
+                              FutureBuilder<double>(
+                                future: _despesaDAO.getTotalGastoPorEtapa(
+                                  etapa.id!,
                                 ),
+                                builder: (context, snapshot) {
+                                  final valorUtilizado = snapshot.data ?? 0.0;
+                                  return Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '${(progresso * 100).toInt()}% utilizado',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: statusColor,
+                                        ),
+                                      ),
+                                      Text(
+                                        '${_currencyFormat.format(valorUtilizado)} utilizado',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
                               ),
+
+                              //style: TextStyle(
+                              //                           fontSize: 12,
+                              //                         fontWeight: FontWeight.w600,
+                              //                       color: statusColor,
+                              //                   ),
+                              //               ),
                             ],
                           ),
                           // ← VALOR ORÇADO (NOVO)
-                          if (etapa.valorOrcado != null && etapa.valorOrcado! > 0)
+                          if (etapa.valorOrcado != null &&
+                              etapa.valorOrcado! > 0)
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,
@@ -418,7 +449,11 @@ class _ListaEtapaPageState extends State<ListaEtapaPage> {
                   },
                 ),
                 IconButton(
-                  icon: Icon(Icons.delete, size: 20, color: Colors.red.shade700),
+                  icon: Icon(
+                    Icons.delete,
+                    size: 20,
+                    color: Colors.red.shade700,
+                  ),
                   tooltip: 'Excluir',
                   onPressed: () => _confirmarExclusao(etapa),
                 ),

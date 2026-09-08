@@ -310,8 +310,9 @@ class _CadastroDespesaPageState extends State<CadastroDespesaPage> {
   String _calcularStatus(double progresso) {
     if (progresso >= 1.0) return 'Concluído';
     if (progresso >= 0.7) return 'Em Andamento';
-    if (progresso >= 0.3) return 'Em Andamento';
-    if (progresso > 0) return 'Iniciado';
+    if (progresso >= 0.1) return 'Em Andamento';
+    if (progresso >= 0.06) return 'Iniciado';
+    if (progresso > 0) return 'Planejado';
     return 'Pendente';
   }
 

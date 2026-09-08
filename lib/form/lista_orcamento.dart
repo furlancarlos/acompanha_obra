@@ -236,7 +236,9 @@ class _ListaOrcamentoPageState extends State<ListaOrcamentoPage> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                      Row(
+                      Wrap(
+                        spacing: 4,
+                        runSpacing: 2,
                         children: [
                           Icon(
                             Icons.calendar_today,
@@ -319,9 +321,13 @@ class _ListaOrcamentoPageState extends State<ListaOrcamentoPage> {
             ),
             const SizedBox(height: 8),
             // Botões de ação
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
+            SizedBox(
+              width: double.infinity,
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 4,
+                runSpacing: 4,
+                children: [
                 // ← BOTÃO ETAPAS (NOVO)
                 TextButton.icon(
                   onPressed: () async {
@@ -380,7 +386,8 @@ class _ListaOrcamentoPageState extends State<ListaOrcamentoPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                   ),
                 ),
-              ],
+                ],
+              ),
             ),
           ],
         ),

@@ -207,8 +207,9 @@ class CardGraficoEtapas extends StatelessWidget {
   String _getStatusText(double progresso) {
     if (progresso >= 1.0) return 'Concluído';
     if (progresso >= 0.7) return 'Quase lá';
-    if (progresso >= 0.4) return 'Em andamento';
-    if (progresso >= 0.1) return 'Iniciado';
+    if (progresso >= 0.1) return 'Em andamento';
+    if (progresso >= 0.06) return 'Iniciado';
+    if (progresso >= 0.05) return 'Planejado';
     return 'Pendente';
   }
 }
