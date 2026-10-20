@@ -80,7 +80,7 @@ class DespesaDAO {
     return 0.0;
   }
 
-  // Busca despesas por orçamento
+/*  // Busca despesas por orçamento
   Future<List<Despesa>> getByOrcamento(int orcamentoId) async {
     final db = await DBHelper().db;
     final result = await db.query(
@@ -91,6 +91,7 @@ class DespesaDAO {
     );
     return result.map((map) => Despesa.fromMap(map)).toList();
   }
+*/
 
   // Busca despesas por etapa
   Future<List<Despesa>> getByEtapa(int etapaId) async {
@@ -103,4 +104,22 @@ class DespesaDAO {
     );
     return result.map((map) => Despesa.fromMap(map)).toList();
   }
+
+  Future<List<Despesa>> getByOrcamento(int orcamentoId) async {
+  final db = await DBHelper().db;
+
+  final List<Map<String, dynamic>> maps = await db.rawQuery('''
+    SELECT 
+      d.*,
+      e.nome AS nome_etapa,
+      f.nome AS nome_fornecedor
+    FROM despesa d
+    LEFT JOIN etapa e ON d.etapa_id = e.id
+    LEFT JOIN fornecedor f ON d.fornecedor_id = f.id
+    WHERE d.orcamento_id = ?
+    ORDER BY d.data DESC
+  ''', [orcamentoId]);
+
+  return List.generate(maps.length, (i) => Despesa.fromMap(maps[i]));
+}
 }

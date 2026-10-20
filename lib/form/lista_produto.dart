@@ -9,7 +9,9 @@ import '../models/produto.dart';
 import '../screens/cadastro_produto.dart';
 
 class ListaProdutoPage extends StatefulWidget {
-  const ListaProdutoPage({super.key});
+  final bool embedded;
+
+  const ListaProdutoPage({super.key, this.embedded = false});
 
   @override
   State<ListaProdutoPage> createState() => _ListaProdutoPageState();
@@ -86,12 +88,14 @@ class _ListaProdutoPageState extends State<ListaProdutoPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Produtos'),
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 2,
-      ),
+      appBar: widget.embedded
+          ? null
+          : AppBar(
+              title: const Text('Produtos'),
+              backgroundColor: Theme.of(context).primaryColor,
+              foregroundColor: Colors.white,
+              elevation: 2,
+            ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _produtos.isEmpty

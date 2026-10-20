@@ -1,6 +1,6 @@
 // despesa.dart
 // Arquivo de definição da classe despesa que será responsável por armazenar os dados de um despesa.
-//======================================================================================================//
+//=================================================================================================//
 
 class Despesa {
   int? id;
@@ -15,6 +15,8 @@ class Despesa {
   double valorUnitario;
   double valorTotal;
   String? numeroNota;
+  String? nomeEtapa;
+  String? nomeFornecedor;
 
   Despesa({
     this.id,
@@ -29,6 +31,8 @@ class Despesa {
     required this.valorUnitario,
     required this.valorTotal,
     this.numeroNota,
+    this.nomeEtapa,
+    this.nomeFornecedor,
   });
 
   Map<String, dynamic> toMap() {
@@ -62,6 +66,8 @@ class Despesa {
       valorUnitario: (map['valor_unitario'] as num).toDouble(),
       valorTotal: (map['valor_total'] as num).toDouble(),
       numeroNota: map['numero_nota'],
+      nomeEtapa: map['nome_etapa'],
+      nomeFornecedor: map['nome_fornecedor'],
     );
   }
 }

@@ -1,4 +1,4 @@
-// dao/etapa_dao.dart
+// lib/dao/etapa_dao.dart
 // Arquivo de definição da classe EtapaDAO que será responsável por fazer
 // operações com o banco de dados.
 //============================================================================//
@@ -26,7 +26,11 @@ class EtapaDAO {
 
   Future<int> delete(int id) async {
     final db = await _dbHelper.db;
-    return await db.delete('etapa', where: 'id = ?', whereArgs: [id]);
+    return await db.delete(
+      'etapa', 
+      where: 'id = ?', 
+      whereArgs: [id]
+    );
   }
 
   Future<List<Etapa>> getAll() async {
@@ -45,8 +49,6 @@ class EtapaDAO {
     );
     return result.map((map) => Etapa.fromMap(map)).toList();
   }
-
-  // dao/etapa_dao.dart - getById (versão mais segura)
 
   Future<Etapa?> getById(int id) async {
     final db = await _dbHelper.db;
@@ -162,7 +164,8 @@ class EtapaDAO {
   }
 
   String _calcularStatus(double progresso) {
-    if (progresso >= 1.0) return 'Concluído';
+    if (progresso > 1.0) return 'Ultrapassou 100%';
+    if (progresso == 1.0) return 'Concluído';
     if (progresso >= 0.7) return 'Em Andamento';
     if (progresso >= 0.1) return 'Em Andamento';
     if (progresso >= 0.06) return 'Iniciado';

@@ -4,8 +4,10 @@
 
 import 'package:flutter/material.dart';
 import 'abas/aba_historico_despesas.dart';
+import 'abas/aba_historico_etapas.dart';
 import 'abas/aba_backup.dart';
 import 'abas/aba_outros.dart';
+import '../form/lista_produto.dart';
 
 class ConfiguracoesPage extends StatelessWidget {
   final int? orcamentoId;
@@ -18,7 +20,7 @@ class ConfiguracoesPage extends StatelessWidget {
     final idValido = orcamentoId ?? 0;
 
     return DefaultTabController(
-      length: 3, // Total de abas
+      length: 4, // Total de abas
       child: Scaffold(
         appBar: AppBar(
           title: const Text(
@@ -35,6 +37,8 @@ class ConfiguracoesPage extends StatelessWidget {
             indicatorWeight: 3,
             tabs: [
               Tab(icon: Icon(Icons.receipt_long), text: 'Despesas'),
+              Tab(icon: Icon(Icons.calendar_month), text: 'Etapas'),
+              Tab(icon: Icon(Icons.inventory_2), text: 'Produtos'),
               Tab(icon: Icon(Icons.backup), text: 'Backup'),
               Tab(icon: Icon(Icons.build), text: 'Outros'),
             ],
@@ -47,6 +51,12 @@ class ConfiguracoesPage extends StatelessWidget {
                 : const Center(
                     child: Text('Selecione um orçamento na tela inicial.'),
                   ),
+            idValido > 0
+                ? AbaHistoricoEtapas(orcamentoId: idValido)
+                : const Center(
+                    child: Text('Selecione uma etapa na tela inicial.'),
+                  ),
+            const ListaProdutoPage(embedded: true),
             const AbaBackup(),
             const AbaOutros(),
           ],

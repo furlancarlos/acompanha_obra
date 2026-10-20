@@ -1,9 +1,8 @@
-// orcamento_dao.dart
+// lib/dao/orcamento_dao.dart
 // Arquivo de definição da classe OrcamentoDAO que será responsável por fazer
 // operações com o banco de dados.
 //============================================================================//
 
-// dao/orcamento_dao.dart
 import '../database/db_helper.dart';
 import '../models/orcamento.dart';
 

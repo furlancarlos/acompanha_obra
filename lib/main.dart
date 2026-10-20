@@ -1,4 +1,4 @@
-// main.dart
+// lib/main.dart
 // Arquivo de definição da classe principal do aplicativo.
 // Para iniciar o aplicativo, execute o comando flutter run.
 // Pasta de trabalho: C:\projetos\Flutter\acompanha_obra

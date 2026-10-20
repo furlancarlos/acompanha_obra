@@ -12,12 +12,16 @@ import '../cadastro_despesa.dart';
 class NotaDespesaGroup {
   final String identificador;
   final String? numeroNota;
+  final String? nomeEtapa;
+  final String? nomeFornecedor;
   final String data;
   final List<Despesa> itens;
 
   NotaDespesaGroup({
     required this.identificador,
     this.numeroNota,
+    this.nomeEtapa,
+    this.nomeFornecedor,
     required this.data,
     required this.itens,
   });
@@ -39,7 +43,10 @@ class AbaHistoricoDespesas extends StatefulWidget {
 
 class _AbaHistoricoDespesasState extends State<AbaHistoricoDespesas> {
   final _despesaDAO = DespesaDAO();
-  final _currencyFormat = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$ ');
+  final _currencyFormat = NumberFormat.currency(
+    locale: 'pt_BR',
+    symbol: 'R\$ ',
+  );
   late Future<List<Despesa>> _despesasFuture;
 
   @override
@@ -59,8 +66,9 @@ class _AbaHistoricoDespesasState extends State<AbaHistoricoDespesas> {
     final Map<String, List<Despesa>> mapaGrupos = {};
 
     for (var despesa in despesas) {
-      final temNota = despesa.numeroNota != null && despesa.numeroNota!.trim().isNotEmpty;
-      
+      final temNota =
+          despesa.numeroNota != null && despesa.numeroNota!.trim().isNotEmpty;
+
       // Se tiver número de nota, agrupa por ele.
       // Se não tiver nota, agrupa por Data + Descrição (fallback)
       final chave = temNota
@@ -75,7 +83,9 @@ class _AbaHistoricoDespesasState extends State<AbaHistoricoDespesas> {
 
     return mapaGrupos.entries.map((entry) {
       final primeiroItem = entry.value.first;
-      final temNota = primeiroItem.numeroNota != null && primeiroItem.numeroNota!.trim().isNotEmpty;
+      final temNota =
+          primeiroItem.numeroNota != null &&
+          primeiroItem.numeroNota!.trim().isNotEmpty;
 
       final identificador = temNota
           ? 'Nota Fiscal nº ${primeiroItem.numeroNota}'
@@ -84,6 +94,8 @@ class _AbaHistoricoDespesasState extends State<AbaHistoricoDespesas> {
       return NotaDespesaGroup(
         identificador: identificador,
         numeroNota: primeiroItem.numeroNota,
+        nomeEtapa: primeiroItem.nomeEtapa,
+        nomeFornecedor: primeiroItem.nomeFornecedor,
         data: primeiroItem.data,
         itens: entry.value,
       );
@@ -130,7 +142,9 @@ class _AbaHistoricoDespesasState extends State<AbaHistoricoDespesas> {
               _recarregarDespesas();
 
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Lançamento removido com sucesso!')),
+                const SnackBar(
+                  content: Text('Lançamento removido com sucesso!'),
+                ),
               );
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -145,7 +159,7 @@ class _AbaHistoricoDespesasState extends State<AbaHistoricoDespesas> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: FutureBuilder<List<Despesa>>(
-        future: _despesasFuture, // 💡 Usa o Future gerenciado no initState
+        future: _despesasFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -179,7 +193,7 @@ class _AbaHistoricoDespesasState extends State<AbaHistoricoDespesas> {
             );
           }
 
-          // 💡 Executa o agrupamento antes de renderizar a lista
+          // Executa o agrupamento antes de renderizar a lista
           final notasAgrupadas = _agruparDespesasEmNotas(despesas);
 
           return ListView.builder(
@@ -194,19 +208,30 @@ class _AbaHistoricoDespesasState extends State<AbaHistoricoDespesas> {
               } catch (_) {
                 dataDespesa = DateTime.now();
               }
-              final dataFormatada = DateFormat('dd/MM/yyyy').format(dataDespesa);
+              final dataFormatada = DateFormat(
+                'dd/MM/yyyy',
+              ).format(dataDespesa);
 
-              // 💡 Se houver apenas 1 item no grupo sem nota, exibe Card simples
+              // Se houver apenas 1 item no grupo sem nota, exibe Card simples
               // Se houver múltiplos itens ou tiver número de nota, exibe ExpansionTile
               if (grupoNota.itens.length == 1 && grupoNota.numeroNota == null) {
                 final despesa = grupoNota.itens.first;
+                final etapaText = despesa.nomeEtapa ?? 'Sem Etapa';
+                final fornecedorText =
+                    despesa.nomeFornecedor ?? 'Sem Fornecedor';
+
                 return Card(
                   elevation: 2,
                   margin: const EdgeInsets.symmetric(vertical: 6),
                   child: ListTile(
                     leading: CircleAvatar(
-                      backgroundColor: const Color(0xFF1B3A5C).withValues(alpha: 0.1),
-                      child: const Icon(Icons.monetization_on, color: Color(0xFF1B3A5C)),
+                      backgroundColor: const Color(
+                        0xFF1B3A5C,
+                      ).withValues(alpha: 0.1),
+                      child: const Icon(
+                        Icons.monetization_on,
+                        color: Color(0xFF1B3A5C),
+                      ),
                     ),
                     title: Text(
                       despesa.descricao,
@@ -214,6 +239,8 @@ class _AbaHistoricoDespesasState extends State<AbaHistoricoDespesas> {
                     ),
                     subtitle: Text(
                       'Data: $dataFormatada\n'
+                      'Etapa: $etapaText \n'
+                      'Fornecedor: $fornecedorText\n'
                       'Qtd: ${despesa.quantidade} x ${_currencyFormat.format(despesa.valorUnitario)}',
                     ),
                     isThreeLine: true,
@@ -238,7 +265,11 @@ class _AbaHistoricoDespesasState extends State<AbaHistoricoDespesas> {
                               value: 'editar',
                               child: Row(
                                 children: [
-                                  Icon(Icons.edit, color: Colors.orange, size: 20),
+                                  Icon(
+                                    Icons.edit,
+                                    color: Colors.orange,
+                                    size: 20,
+                                  ),
                                   SizedBox(width: 8),
                                   Text('Editar'),
                                 ],
@@ -248,7 +279,11 @@ class _AbaHistoricoDespesasState extends State<AbaHistoricoDespesas> {
                               value: 'excluir',
                               child: Row(
                                 children: [
-                                  Icon(Icons.delete, color: Colors.red, size: 20),
+                                  Icon(
+                                    Icons.delete,
+                                    color: Colors.red,
+                                    size: 20,
+                                  ),
                                   SizedBox(width: 8),
                                   Text('Excluir'),
                                 ],
@@ -262,35 +297,68 @@ class _AbaHistoricoDespesasState extends State<AbaHistoricoDespesas> {
                 );
               }
 
-              // 💡 Renderiza um Card expansível quando a nota reúne múltiplos itens
+              // Renderiza um Card expansível quando a nota reúne múltiplos itens
+              final etapaGrupoText = grupoNota.nomeEtapa ?? 'Sem Etapa';
+              final fornecedorGrupoText =
+                  grupoNota.nomeFornecedor ?? 'Sem Fornecedor';
+
               return Card(
                 elevation: 3,
                 margin: const EdgeInsets.symmetric(vertical: 6),
                 child: ExpansionTile(
                   leading: CircleAvatar(
-                    backgroundColor: const Color(0xFF1B3A5C).withValues(alpha: 0.1),
+                    backgroundColor: const Color(
+                      0xFF1B3A5C,
+                    ).withValues(alpha: 0.1),
                     child: const Icon(Icons.receipt, color: Color(0xFF1B3A5C)),
                   ),
                   title: Text(
                     grupoNota.identificador,
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  subtitle: Text('Data: $dataFormatada • ${grupoNota.itens.length} itens'),
+                  subtitle: Text.rich(
+                    TextSpan(
+                      children: [
+                        // Linha do topo com tamanho normal do subtitle
+                        TextSpan(
+                          text:
+                              'Data: $dataFormatada • ${grupoNota.itens.length} itens\n',
+                          style: TextStyle(fontSize: 9),
+                        ),
+                        // Linha da Etapa e Fornecedor com fonte menor e cor suave
+                        TextSpan(
+                          text:
+                              'Etapa: $etapaGrupoText\nFornecedor: $fornecedorGrupoText',
+                          style: TextStyle(
+                            fontSize: 9,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   trailing: Text(
                     _currencyFormat.format(grupoNota.valorTotalNota),
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 15,
+                      fontSize: 14,
                       color: Colors.red,
                     ),
                   ),
                   children: grupoNota.itens.map((despesa) {
+                    //final itemEtapa = despesa.nomeEtapa ?? 'Sem Etapa';
+                    //final itemFornecedor = despesa.nomeFornecedor ?? 'Sem Fornecedor';
+
                     return Container(
                       color: Colors.grey.shade50,
                       child: ListTile(
                         dense: true,
-                        title: Text(despesa.descricao, style: const TextStyle(fontWeight: FontWeight.w600)),
+                        title: Text(
+                          despesa.descricao,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
                         subtitle: Text(
+                          //'Etapa: $itemEtapa | Fornecedor: $itemFornecedor\n'
                           'Qtd: ${despesa.quantidade} x ${_currencyFormat.format(despesa.valorUnitario)}',
                         ),
                         trailing: Row(
@@ -298,19 +366,27 @@ class _AbaHistoricoDespesasState extends State<AbaHistoricoDespesas> {
                           children: [
                             Text(
                               _currencyFormat.format(despesa.valorTotal),
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             PopupMenuButton<String>(
                               onSelected: (opcao) {
                                 if (opcao == 'editar') _editarDespesa(despesa);
-                                if (opcao == 'excluir') _confirmarExclusao(despesa);
+                                if (opcao == 'excluir') {
+                                  _confirmarExclusao(despesa);
+                                }
                               },
                               itemBuilder: (context) => [
                                 const PopupMenuItem(
                                   value: 'editar',
                                   child: Row(
                                     children: [
-                                      Icon(Icons.edit, color: Colors.orange, size: 18),
+                                      Icon(
+                                        Icons.edit,
+                                        color: Colors.orange,
+                                        size: 18,
+                                      ),
                                       SizedBox(width: 8),
                                       Text('Editar'),
                                     ],
@@ -320,7 +396,11 @@ class _AbaHistoricoDespesasState extends State<AbaHistoricoDespesas> {
                                   value: 'excluir',
                                   child: Row(
                                     children: [
-                                      Icon(Icons.delete, color: Colors.red, size: 18),
+                                      Icon(
+                                        Icons.delete,
+                                        color: Colors.red,
+                                        size: 18,
+                                      ),
                                       SizedBox(width: 8),
                                       Text('Excluir'),
                                     ],
